@@ -7,7 +7,6 @@ module org.cpvisu {
     requires org.kordamp.ikonli.javafx;
     requires eu.hansolo.tilesfx;
 
-    exports org.cpvisu.shape2d;
     exports org.cpvisu.examples;
     opens org.cpvisu.examples to javafx.fxml;
 }
