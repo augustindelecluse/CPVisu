@@ -1,21 +1,20 @@
 package org.cpvisu.examples;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 
 import javafx.stage.Stage;
-import javafx.util.Duration;
+import org.cpvisu.VisualApplication;
 import org.cpvisu.VisualBinPacking;
+
 import java.util.concurrent.ThreadLocalRandom;
 
-public class BinPacking extends Application {
+import static org.cpvisu.AnimationFactory.*;
+
+public class BinPacking extends VisualApplication {
 
     @Override
-    public void start(Stage stage) throws Exception {
-
+    public Scene application(Stage stage) {
         int nBin = 20;
         int width = 70;
         int maxHeight = 600;
@@ -24,26 +23,21 @@ public class BinPacking extends Application {
         Group rectangles = binPacking.initRectangles();
         Scene scene = new Scene(rectangles, nBin * width, maxHeight * 1.2);
 
-        stage.setScene(scene);
+        animateForever(1000, () -> {
+            boolean inserted = false;
+            do {
+                int i = ThreadLocalRandom.current().nextInt(nBin);
+                int j = ThreadLocalRandom.current().nextInt(nBin);
+                int binSize = binPacking.binSize(i);
+                if (binSize != 0) {
+                    int rectangle = ThreadLocalRandom.current().nextInt(binSize);
+                    inserted = binPacking.moveRectangle(500, rectangle, i, j);
+                }
+            } while (!inserted);
+        });
+
         stage.setTitle("Bin Packing Problem");
-
-        stage.show();
-
-        Timeline timeline = new Timeline( // animation: every 1s, move a rectangle
-                new KeyFrame(Duration.millis(1000), event -> {
-                    boolean inserted = false;
-                    do {
-                        int from = ThreadLocalRandom.current().nextInt(nBin);
-                        int to = ThreadLocalRandom.current().nextInt(nBin);
-                        inserted = binPacking.moveRectangle(from, to);
-                    } while (!inserted);
-                })
-        );
-        timeline.setCycleCount(Timeline.INDEFINITE); // always play the animation
-        timeline.play();
+        return scene;
     }
 
-    public static void main(String[] args) {
-        launch();
-    }
 }
