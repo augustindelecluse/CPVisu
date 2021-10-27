@@ -1,11 +1,12 @@
 package org.cpvisu;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
@@ -54,8 +55,8 @@ public class AnimationFactory {
         animate(0, e -> action.run(), 0, 1);
     }
 
-    public static void animate(long durationBefore, Runnable action) {
-        animate(durationBefore, e -> action.run(), 0, 1);
+    public static void animate(long duration, Runnable action) {
+        animate(duration, e -> action.run(), 0, 1);
     }
 
     /**
@@ -63,26 +64,28 @@ public class AnimationFactory {
      * @param action function to call forever
      */
     public static void animateForever(Runnable action) {
-        animate(0, e -> action.run(), 0, Timeline.INDEFINITE);
+        animate(1, e -> action.run(), 0, Timeline.INDEFINITE);
     }
 
     /**
      * loop forever on the given action, with a delay between 2 calls to the action
-     * @param durationBefore waiting time between 2 actions
+     * @param durationCycle waiting time between 2 actions
      * @param action function to call forever
      */
-    public static void animateForever(long durationBefore, Runnable action) {
-        animate(durationBefore, e -> action.run(), 0, Timeline.INDEFINITE);
+    public static void animateForever(long durationCycle, Runnable action) {
+        animate(durationCycle, e -> action.run(), 0, Timeline.INDEFINITE);
     }
 
+    public static void animateForever(long durationCycle, Runnable action, long durationBefore) {
+        animate(durationCycle, e -> action.run(), durationBefore, Timeline.INDEFINITE);
+    }
 
-    public static void animate(long durationBefore, EventHandler<ActionEvent> action, long durationAfter, int cycle) {
+    public static void animate(long durationCycle, EventHandler<ActionEvent> action, long durationBefore, int cycle) {
         Timeline timeline = new Timeline(
-                new KeyFrame(Duration.millis(durationBefore)),
-                new KeyFrame(Duration.ONE, action),
-                new KeyFrame(Duration.millis(durationAfter))
+                new KeyFrame(Duration.millis(durationCycle), action)
         );
         timeline.setCycleCount(cycle); // always play the animation
+        timeline.setDelay(Duration.millis(durationBefore));
         timeline.play();
     }
 
@@ -95,6 +98,52 @@ public class AnimationFactory {
         int green = ThreadLocalRandom.current().nextInt(255);
         int blue = ThreadLocalRandom.current().nextInt(255);
         return Color.rgb(red, green, blue);
+    }
+
+    /**
+     * auto resize a set of items according to the dimensions of the scene
+     * @param scene scene that might be resized
+     * @param items items that will be resized whenever the dimensions of the scene change
+     */
+    public static void autoResize(Scene scene, Parent items) {
+        double initWidth = scene.getWidth();
+        double initHeight = scene.getHeight();
+
+        // changes in width
+        long threshold = 125;
+        Duration delay = Duration.millis(500);
+        ScaleTransition stX = new ScaleTransition(Duration.ONE, items);
+        TranslateTransition ttX = new TranslateTransition(Duration.ONE, items);
+        stX.setDelay(delay);
+        ttX.setDelay(delay);
+
+        scene.widthProperty().addListener((ObservableValue<? extends Number> obs, Number oldVal, Number newVal) -> {
+            stX.stop();
+            ttX.stop();
+            stX.setToX(scene.getWidth() / initWidth);
+            ttX.setToX((scene.getWidth() - initWidth) / 2);
+            ttX.playFromStart();
+            stX.playFromStart();
+            System.out.println("width change");
+        });
+
+        // changes in height
+        ScaleTransition stY = new ScaleTransition(Duration.ONE, items);
+        TranslateTransition ttY = new TranslateTransition(Duration.ONE, items);
+        stY.setDelay(delay);
+        ttY.setDelay(delay);
+
+        scene.heightProperty().addListener((ObservableValue<? extends Number> obs, Number oldVal, Number newVal) -> {
+            stY.stop();
+            ttY.stop();
+            stY.setToY(scene.getHeight()/ initHeight);
+            ttY.setToY((scene.getHeight() - initHeight) / 2);
+            stY.playFromStart();
+            ttY.playFromStart();
+            System.out.println("height change");
+        });
+
+
     }
 
 }

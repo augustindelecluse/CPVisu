@@ -2,13 +2,10 @@ package org.cpvisu.examples;
 
 import javafx.scene.Group;
 import javafx.scene.Scene;
-
 import javafx.stage.Stage;
 import org.cpvisu.VisualApplication;
 import org.cpvisu.VisualBinPacking;
-
 import java.util.concurrent.ThreadLocalRandom;
-
 import static org.cpvisu.AnimationFactory.*;
 
 public class BinPacking extends VisualApplication {
@@ -16,14 +13,20 @@ public class BinPacking extends VisualApplication {
     @Override
     public Scene application(Stage stage) {
         int nBin = 20;
-        int width = 70;
+        int binWidth = 70;
         int maxHeight = 600;
 
-        VisualBinPacking binPacking = new VisualBinPacking(nBin, width, maxHeight);
-        Group rectangles = binPacking.initRectangles();
-        Scene scene = new Scene(rectangles, nBin * width, maxHeight * 1.2);
+        int width = nBin * binWidth;
+        int height = maxHeight;
 
-        animateForever(1000, () -> {
+        VisualBinPacking binPacking = new VisualBinPacking(nBin, binWidth, maxHeight);
+        Group rectangles = binPacking.initRectangles();
+        Scene scene = new Scene(rectangles, width, maxHeight);
+
+        stage.setTitle("Bin Packing Problem");
+        autoResize(scene, rectangles);
+
+        animateForever(500, () -> {
             boolean inserted = false;
             do {
                 int i = ThreadLocalRandom.current().nextInt(nBin);
@@ -31,12 +34,11 @@ public class BinPacking extends VisualApplication {
                 int binSize = binPacking.binSize(i);
                 if (binSize != 0) {
                     int rectangle = ThreadLocalRandom.current().nextInt(binSize);
-                    inserted = binPacking.moveRectangle(500, rectangle, i, j);
+                    inserted = binPacking.moveRectangle(250, rectangle, i, j);
                 }
             } while (!inserted);
         });
 
-        stage.setTitle("Bin Packing Problem");
         return scene;
     }
 
