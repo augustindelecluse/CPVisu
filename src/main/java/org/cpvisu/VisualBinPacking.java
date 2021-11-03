@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static org.cpvisu.AnimationFactory.*;
+import static org.cpvisu.util.colors.ColorFactory.*;
 
 public class VisualBinPacking {
 

@@ -7,11 +7,10 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.util.Duration;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 public class AnimationFactory {
 
@@ -44,6 +43,13 @@ public class AnimationFactory {
         TranslateTransition translateTransition = new TranslateTransition(duration, rectangle);
         translateTransition.setToX(x - rectangle.getX());
         translateTransition.setToY(y - rectangle.getY());
+        translateTransition.play();
+    }
+
+    public static void moveTo(Circle circle, Duration duration, double x, double y) {
+        TranslateTransition translateTransition = new TranslateTransition(duration, circle);
+        translateTransition.setToX(x - circle.getCenterX());
+        translateTransition.setToY(y - circle.getCenterY());
         translateTransition.play();
     }
 
@@ -87,17 +93,6 @@ public class AnimationFactory {
         timeline.setCycleCount(cycle); // always play the animation
         timeline.setDelay(Duration.millis(durationBefore));
         timeline.play();
-    }
-
-    /**
-     * gives a random color
-     * @return random color
-     */
-    public static Color randomColor() {
-        int red = ThreadLocalRandom.current().nextInt(255);
-        int green = ThreadLocalRandom.current().nextInt(255);
-        int blue = ThreadLocalRandom.current().nextInt(255);
-        return Color.rgb(red, green, blue);
     }
 
     /**

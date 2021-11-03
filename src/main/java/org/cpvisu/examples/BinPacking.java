@@ -26,7 +26,7 @@ public class BinPacking extends VisualApplication {
         stage.setTitle("Bin Packing Problem");
         autoResize(scene, rectangles);
 
-        animateForever(500, () -> {
+        animateForever(300, () -> {
             boolean inserted = false;
             do {
                 int i = ThreadLocalRandom.current().nextInt(nBin);

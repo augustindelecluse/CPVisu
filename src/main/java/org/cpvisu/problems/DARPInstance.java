@@ -128,4 +128,16 @@ public class DARPInstance {
         return scaling;
     }
 
+    public int getNVehicle() {
+        return vehicleCapacity.length;
+    }
+
+    public int getNNodes() {
+        return getNVehicle() * 2 + nodes.length;
+    }
+
+    public int getNRequests() {
+        return nodes.length / 2;
+    }
+
 }
