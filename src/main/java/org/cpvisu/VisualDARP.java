@@ -1,9 +1,8 @@
 package org.cpvisu;
 
-import javafx.animation.ParallelTransition;
-import javafx.animation.ScaleTransition;
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
 import javafx.collections.ObservableList;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -36,9 +35,12 @@ public class VisualDARP {
     private int width;
     private int height;
     private Rectangle background;
+    private Scene scene;
 
-    private double initDragX;
-    private double initDragY;
+    private double mouseAnchorX; // used for the position when dragging nodes
+    private double mouseAnchorY;
+    private double canvasTranslateX;
+    private double canvasTranslateY;
 
     public VisualDARP(DARPInstance darp, int width, int height, Function<DARPNode, VisualShape> drawingFunction) {
         this.darp = darp;
@@ -71,7 +73,7 @@ public class VisualDARP {
         return null;
     }
 
-    public Group init() {
+    public Scene init() {
         Shape[] shapes = new Shape[darp.getNNodes()];
         this.shapes = new VisualShape[shapes.length];
         double minX = Double.MAX_VALUE;
@@ -111,61 +113,69 @@ public class VisualDARP {
         background.setFill(Color.WHITE);
         shapesGroup = new Group(shapes);
         group = new Group(background, shapesGroup);
-        //registerScrollListener();
-        registerDraggListener();
-        return group;
+        scene = new Scene(group, width, height);
+        registerScrollListener();
+        registerDragListener();
+        return scene;
     }
 
     /**
-     * move all objects within the scene when dragged from the mouse
+     * move all objects within the scene when a drag event occurs
      */
-    public void registerDraggListener() {
-        group.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
-            initDragX = event.getSceneX();
-            initDragY = event.getSceneY();
+    public void registerDragListener() {
+        scene.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
+            mouseAnchorX = event.getSceneX();
+            mouseAnchorY = event.getSceneY();
+            canvasTranslateX = shapesGroup.getTranslateX();
+            canvasTranslateY = shapesGroup.getTranslateY();
         });
-        group.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
-            event.consume();
-            TranslateTransition translateTransition = new TranslateTransition(Duration.ONE, shapesGroup);
-            translateTransition.setByX(event.getSceneX() - initDragX);
-            translateTransition.setByY(event.getSceneY() - initDragY);
-            translateTransition.play();
-            initDragX = event.getSceneX();
-            initDragY = event.getSceneY();
+        scene.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
+            if (event.isPrimaryButtonDown()) { // only drag using the primary button
+                shapesGroup.setTranslateX(canvasTranslateX + event.getSceneX() - mouseAnchorX);
+                shapesGroup.setTranslateY(canvasTranslateY + event.getSceneY() - mouseAnchorY);
+                event.consume();
+            }
         });
     }
 
+    /**
+     * zoom in-out based on the mouse current position
+     */
     public void registerScrollListener() {
-        group.setOnScroll((ScrollEvent event) -> {
-            double mouseX = event.getSceneX(); // get the coordinates of the mouse
-            double mouseY = event.getSceneY();
-            double delta = event.getDeltaY() / 100;
-            double deltaScale = delta;
-            if (deltaScale != 0.)
-                System.out.println("delta scale =" + deltaScale);
-            int i =0;
-            if (delta != 0) {
-                for (VisualShape visualShape : shapes) {
-                    // compute the distance between the shape and the mouse
+        scene.setOnScroll((ScrollEvent event) -> {
+            if (event.getDeltaY() != 0) {
+                event.consume();
+                double factor = 1.5;
+                //double x = ((double) width) / 2; // centered zoom
+                //double y = ((double) height) / 2;
+                double x = event.getSceneX();
+                double y = event.getSceneY();
+                if (event.getDeltaY() < 0) {
+                    factor = 1.0 / factor;
+                }
+                for (VisualShape visualShape: shapes) {
                     Shape shape = visualShape.getShape();
-                    double dx = (visualShape.getCenterX() + shape.getTranslateX() - mouseX);
-                    double dy = (visualShape.getCenterY() + shape.getTranslateY() - mouseY);
-                    dx = dx * delta;
-                    dy = dy * delta;
-                    TranslateTransition translateTransition = new TranslateTransition(Duration.millis(150), shape);
-                    translateTransition.setByX(dx);
-                    translateTransition.setByY(dy);
-                    ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(150), shape);
-                    if (shape.getScaleX() + deltaScale > 0) { // prevent to have negative scales
-                        scaleTransition.setByX(deltaScale);
-                        scaleTransition.setByY(deltaScale);
-                    }
-                    ParallelTransition parallelTransition = new ParallelTransition(translateTransition);
-                    parallelTransition.play();
+                    double oldScale = shape.getScaleX();
+                    double scale = oldScale * factor;
+                    double f = (scale / oldScale) - 1;
+
+                    // determine offset that we will have to move the node
+                    Bounds bounds = shape.localToScene(shape.getBoundsInLocal());
+                    double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
+                    double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
+
+                    // timeline that scales and moves the node
+                    Timeline timeline = new Timeline();
+                    timeline.getKeyFrames().clear();
+                    timeline.getKeyFrames().addAll(
+                            new KeyFrame(Duration.millis(200), new KeyValue(shape.translateXProperty(), shape.getTranslateX() - f * dx)),
+                            new KeyFrame(Duration.millis(200), new KeyValue(shape.translateYProperty(), shape.getTranslateY() - f * dy)),
+                            new KeyFrame(Duration.millis(200), new KeyValue(shape.scaleXProperty(), scale)),
+                            new KeyFrame(Duration.millis(200), new KeyValue(shape.scaleYProperty(), scale))
+                    );
+                    timeline.play();
                 }
             }
-            event.consume();
-        } );
+        });
     }
-
 }

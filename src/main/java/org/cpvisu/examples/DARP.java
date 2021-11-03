@@ -19,8 +19,7 @@ public class DARP extends VisualApplication {
         int width = 1000;
         int height = 500;
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
-        Group group = visualDARP.init();
-        Scene scene = new Scene(group, width, height);
+        Scene scene = visualDARP.init();
         return scene;
     }
 }
