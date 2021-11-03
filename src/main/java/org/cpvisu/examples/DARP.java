@@ -1,15 +1,12 @@
 package org.cpvisu.examples;
 
-import javafx.application.Application;
-import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.cpvisu.VisualApplication;
 import org.cpvisu.VisualDARP;
 import org.cpvisu.problems.DARPInstance;
-import org.cpvisu.util.colors.ColorFactory;
-import org.cpvisu.util.colors.ColorPalette;
+
+import static org.cpvisu.AnimationFactory.autoResize;
 
 public class DARP extends VisualApplication {
 
@@ -20,6 +17,7 @@ public class DARP extends VisualApplication {
         int height = 500;
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
         Scene scene = visualDARP.init();
+        autoResize(scene, true);
         return scene;
     }
 }

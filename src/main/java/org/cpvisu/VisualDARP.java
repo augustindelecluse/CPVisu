@@ -131,8 +131,8 @@ public class VisualDARP {
         });
         scene.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
             if (event.isPrimaryButtonDown()) { // only drag using the primary button
-                shapesGroup.setTranslateX(canvasTranslateX + event.getSceneX() - mouseAnchorX);
-                shapesGroup.setTranslateY(canvasTranslateY + event.getSceneY() - mouseAnchorY);
+                shapesGroup.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / group.getScaleX());
+                shapesGroup.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / group.getScaleY());
                 event.consume();
             }
         });
@@ -153,28 +153,25 @@ public class VisualDARP {
                 if (event.getDeltaY() < 0) {
                     factor = 1.0 / factor;
                 }
-                for (VisualShape visualShape: shapes) {
-                    Shape shape = visualShape.getShape();
-                    double oldScale = shape.getScaleX();
-                    double scale = oldScale * factor;
-                    double f = (scale / oldScale) - 1;
+                double oldScale = group.getScaleX();
+                double scale = oldScale * factor;
+                double f = (scale / oldScale) - 1;
 
-                    // determine offset that we will have to move the node
-                    Bounds bounds = shape.localToScene(shape.getBoundsInLocal());
-                    double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
-                    double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
+                // determine offset that we will have to move the group
+                Bounds bounds = group.localToScene(group.getBoundsInLocal());
+                double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
+                double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
 
-                    // timeline that scales and moves the node
-                    Timeline timeline = new Timeline();
-                    timeline.getKeyFrames().clear();
-                    timeline.getKeyFrames().addAll(
-                            new KeyFrame(Duration.millis(200), new KeyValue(shape.translateXProperty(), shape.getTranslateX() - f * dx)),
-                            new KeyFrame(Duration.millis(200), new KeyValue(shape.translateYProperty(), shape.getTranslateY() - f * dy)),
-                            new KeyFrame(Duration.millis(200), new KeyValue(shape.scaleXProperty(), scale)),
-                            new KeyFrame(Duration.millis(200), new KeyValue(shape.scaleYProperty(), scale))
-                    );
-                    timeline.play();
-                }
+                // timeline that scales and moves the group
+                Timeline timeline = new Timeline();
+                timeline.getKeyFrames().clear();
+                timeline.getKeyFrames().addAll(
+                        new KeyFrame(Duration.millis(200), new KeyValue(group.translateXProperty(), group.getTranslateX() - f * dx)),
+                        new KeyFrame(Duration.millis(200), new KeyValue(group.translateYProperty(), group.getTranslateY() - f * dy)),
+                        new KeyFrame(Duration.millis(200), new KeyValue(group.scaleXProperty(), scale)),
+                        new KeyFrame(Duration.millis(200), new KeyValue(group.scaleYProperty(), scale))
+                );
+                timeline.play();
             }
         });
     }
