@@ -1,7 +1,6 @@
 package org.cpvisu;
 
 import javafx.animation.*;
-import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
@@ -10,7 +9,6 @@ import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
@@ -18,7 +16,7 @@ import org.cpvisu.problems.DARPInstance;
 import org.cpvisu.problems.DARPNode;
 import org.cpvisu.shapes.VisualCircle;
 import org.cpvisu.shapes.VisualRectangle;
-import org.cpvisu.shapes.VisualShape;
+import org.cpvisu.shapes.VisualNode;
 import org.cpvisu.util.colors.ColorFactory;
 
 import java.util.function.Function;
@@ -26,11 +24,11 @@ import java.util.function.Function;
 public class VisualDARP {
 
     private DARPInstance darp;
-    private Function<DARPNode, VisualShape> drawingFunction;
+    private Function<DARPNode, VisualNode> drawingFunction;
     private Insets innerBorder; // strict area where all nodes are included
     private double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
     private Group group;
-    private VisualShape[] shapes;
+    private VisualNode[] shapes;
     private Group shapesGroup;
     private int width;
     private int height;
@@ -42,7 +40,7 @@ public class VisualDARP {
     private double canvasTranslateX;
     private double canvasTranslateY;
 
-    public VisualDARP(DARPInstance darp, int width, int height, Function<DARPNode, VisualShape> drawingFunction) {
+    public VisualDARP(DARPInstance darp, int width, int height, Function<DARPNode, VisualNode> drawingFunction) {
         this.darp = darp;
         this.drawingFunction = drawingFunction;
         this.width = width;
@@ -53,7 +51,7 @@ public class VisualDARP {
         this(darp, width, height, VisualDARP::DefaultMapping);
     }
 
-    private static VisualShape DefaultMapping(DARPNode node) {
+    private static VisualNode DefaultMapping(DARPNode node) {
         double radius = 5;
         if (node.isDepot()) {
             VisualCircle circle = new VisualCircle(node.getX(), node.getY(), radius);
@@ -74,8 +72,8 @@ public class VisualDARP {
     }
 
     public Scene init() {
-        Shape[] shapes = new Shape[darp.getNNodes()];
-        this.shapes = new VisualShape[shapes.length];
+        Node[] shapes = new Node[darp.getNNodes()];
+        this.shapes = new VisualNode[shapes.length];
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
         double maxX = Double.MIN_VALUE;
@@ -97,15 +95,15 @@ public class VisualDARP {
         // space out the shapes so that they occupy the whole screen
         for (DARPNode[] nodeList: new DARPNode[][]{darp.getBeginDepot(), darp.getNodes(), darp.getEndDepot()}) {
             for (DARPNode node: nodeList) {
-                VisualShape shape = drawingFunction.apply(node);
+                VisualNode shape = drawingFunction.apply(node);
                 double x = ((node.getX() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
                 double y = ((node.getY() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
-                TranslateTransition translateTransition = new TranslateTransition(Duration.ONE, shape.getShape());
+                TranslateTransition translateTransition = new TranslateTransition(Duration.ONE, shape.getNode());
                 translateTransition.setToX(x);
                 translateTransition.setToY(y);
                 translateTransition.play();
                 this.shapes[i] = shape;
-                shapes[i++] = shape.getShape();
+                shapes[i++] = shape.getNode();
             }
         }
         innerBorder = new Insets(threshold, threshold, width, height);
