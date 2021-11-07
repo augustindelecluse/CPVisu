@@ -1,12 +1,13 @@
 package org.cpvisu.shapes;
 
 import javafx.animation.TranslateTransition;
+import javafx.scene.Node;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
 
-public class VisualRectangle extends Rectangle implements VisualShape {
+public class VisualRectangle extends Rectangle implements VisualNode {
 
     public VisualRectangle() {
         super();
@@ -39,7 +40,7 @@ public class VisualRectangle extends Rectangle implements VisualShape {
     }
 
     @Override
-    public Shape getShape() {
+    public Node getNode() {
         return this;
     }
 
@@ -51,5 +52,10 @@ public class VisualRectangle extends Rectangle implements VisualShape {
     @Override
     public double getCenterY() {
         return this.getY() + getHeight() / 2;
+    }
+
+    @Override
+    public Shape getArea() {
+        return this;
     }
 }

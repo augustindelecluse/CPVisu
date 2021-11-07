@@ -1,12 +1,13 @@
 package org.cpvisu.shapes;
 
 import javafx.animation.TranslateTransition;
+import javafx.scene.Node;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
 
-public class VisualCircle extends Circle implements VisualShape{
+public class VisualCircle extends Circle implements VisualNode {
 
     public VisualCircle() {
         super();
@@ -42,7 +43,7 @@ public class VisualCircle extends Circle implements VisualShape{
     }
 
     @Override
-    public Shape getShape() {
+    public Node getNode() {
         return this;
     }
 
@@ -54,6 +55,21 @@ public class VisualCircle extends Circle implements VisualShape{
     @Override
     public double getY() {
         return this.getCenterY() - getRadius();
+    }
+
+    @Override
+    public double getHeight() {
+        return getRadius() * 2;
+    }
+
+    @Override
+    public double getWidth() {
+        return getRadius() * 2;
+    }
+
+    @Override
+    public Shape getArea() {
+        return this;
     }
 
 }

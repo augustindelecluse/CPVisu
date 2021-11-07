@@ -1,15 +1,16 @@
 package org.cpvisu.shapes;
 
+import javafx.scene.Node;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
 
-public interface VisualShape {
+public interface VisualNode {
 
     public void moveTo(double x, double y);
 
     public void moveTo(Duration duration, double x, double y);
 
-    public Shape getShape();
+    public Node getNode();
 
     public double getX();
 
@@ -18,5 +19,11 @@ public interface VisualShape {
     public double getCenterX();
 
     public double getCenterY();
+
+    public double getHeight();
+
+    public double getWidth();
+
+    public Shape getArea();
 
 }
