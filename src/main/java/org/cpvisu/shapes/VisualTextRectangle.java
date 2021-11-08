@@ -11,10 +11,9 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
-public class VisualTextRectangle implements VisualNode {
+public class VisualTextRectangle extends Group implements VisualNode {
 
     private Shape area;
-    private Group visual;
     private Text text;
     private Rectangle rectangle;
 
@@ -44,7 +43,7 @@ public class VisualTextRectangle implements VisualNode {
         rectangle.setFill(Color.WHITE);
         rectangle.setStrokeWidth(2);
         rectangle.setStroke(Color.BLACK);
-        visual = new Group(new StackPane(rectangle, text));
+        this.getChildren().add(new StackPane(rectangle, text));
     }
 
     public Rectangle getBackground() {
@@ -57,48 +56,48 @@ public class VisualTextRectangle implements VisualNode {
 
     @Override
     public void moveTo(double x, double y) {
-        visual.setTranslateX(x);
-        visual.setTranslateY(y);
+        this.setTranslateX(x);
+        this.setTranslateY(y);
     }
 
     public void moveX(double x) {
-        visual.setTranslateX(x);
+        this.setTranslateX(x);
     }
 
     public void moveByX(double x) {
-        visual.setTranslateX(visual.getTranslateX() + x);
+        this.setTranslateX(this.getTranslateX() + x);
     }
 
     @Override
     public void moveTo(Duration duration, double x, double y) {
-        TranslateTransition translateTransition = new TranslateTransition(duration, visual);
+        TranslateTransition translateTransition = new TranslateTransition(duration, this);
         translateTransition.setToX(x);
         translateTransition.setToY(y);
     }
 
     @Override
     public Node getNode() {
-        return visual;
+        return this;
     }
 
     @Override
     public double getX() {
-        return visual.getTranslateX();
+        return this.getTranslateX();
     }
 
     @Override
     public double getY() {
-        return visual.getTranslateY();
+        return this.getTranslateY();
     }
 
     @Override
     public double getCenterX() {
-        return visual.getTranslateX() + rectangle.getWidth() / 2;
+        return this.getTranslateX() + rectangle.getWidth() / 2;
     }
 
     @Override
     public double getCenterY() {
-        return visual.getTranslateY() + rectangle.getHeight() / 2;
+        return this.getTranslateY() + rectangle.getHeight() / 2;
     }
 
     @Override
@@ -117,15 +116,15 @@ public class VisualTextRectangle implements VisualNode {
 
     private void setInitArea() {
         Rectangle positioned =  new Rectangle(rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight());
-        positioned.setTranslateX(visual.getTranslateX());
-        positioned.setTranslateY(visual.getTranslateY());
+        positioned.setTranslateX(this.getTranslateX());
+        positioned.setTranslateY(this.getTranslateY());
         this.area = positioned;
     }
 
     @Override
     public Shape getArea() {
-        this.area.setTranslateX(visual.getTranslateX());
-        this.area.setTranslateY(visual.getTranslateY());
+        this.area.setTranslateX(this.getTranslateX());
+        this.area.setTranslateY(this.getTranslateY());
         return this.area;
     }
 }

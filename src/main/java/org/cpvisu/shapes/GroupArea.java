@@ -16,7 +16,7 @@ public class GroupArea extends Group {
     }
 
     public void add(VisualTextRectangle child) {
-        this.getChildren().add(child.getNode());
+        this.getChildren().add(child);
     }
 
     public Shape getArea() {
