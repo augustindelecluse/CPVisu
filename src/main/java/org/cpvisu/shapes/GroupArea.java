@@ -5,11 +5,13 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.layout.Pane;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Polyline;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import org.cpvisu.problems.SearchTreeNode;
 
-public class GroupArea extends Group {
+public class GroupArea extends Pane {
 
     public GroupArea() {
         super();
@@ -41,7 +43,9 @@ public class GroupArea extends Group {
 
     private Shape getArea(Shape area, Node node, Parent parent) {
         if (node instanceof Shape) {
-            area = mergeShape(area, (Shape) node, parent.getTranslateX(), parent.getTranslateY());
+            if (!(node instanceof Line || node instanceof Polyline)) { // does not take lines into account
+                area = mergeShape(area, (Shape) node, parent.getTranslateX(), parent.getTranslateY());
+            }
         } else if (node instanceof VisualNode) {
             area = mergeShape(area, ((VisualNode) node).getArea(), parent.getTranslateX(), parent.getTranslateY());
         } else if (node instanceof Pane) {

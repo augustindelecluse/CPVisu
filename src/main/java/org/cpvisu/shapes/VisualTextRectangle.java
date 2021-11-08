@@ -43,6 +43,8 @@ public class VisualTextRectangle extends Group implements VisualNode {
         rectangle.setFill(Color.WHITE);
         rectangle.setStrokeWidth(2);
         rectangle.setStroke(Color.BLACK);
+        rectangle.setArcWidth(width / 6);
+        rectangle.setArcHeight(height / 6);
         this.getChildren().add(new StackPane(rectangle, text));
     }
 
@@ -58,14 +60,6 @@ public class VisualTextRectangle extends Group implements VisualNode {
     public void moveTo(double x, double y) {
         this.setTranslateX(x);
         this.setTranslateY(y);
-    }
-
-    public void moveX(double x) {
-        this.setTranslateX(x);
-    }
-
-    public void moveByX(double x) {
-        this.setTranslateX(this.getTranslateX() + x);
     }
 
     @Override
