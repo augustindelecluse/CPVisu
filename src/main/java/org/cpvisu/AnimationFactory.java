@@ -10,6 +10,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
@@ -237,6 +238,45 @@ public class AnimationFactory {
         };
         scene.heightProperty().addListener(listener);
         scene.widthProperty().addListener(listener);
+    }
+
+    public static void moveOnDrag(Scene scene, Node itemsToMove) {
+        new MoveOnDrag(scene, itemsToMove);
+    }
+
+    private static class MoveOnDrag {
+
+        private Scene scene;
+        private Node itemsToMove;
+        private double mouseAnchorX; // used for the position when dragging nodes
+        private double mouseAnchorY;
+        private double canvasTranslateX;
+        private double canvasTranslateY;
+
+        public MoveOnDrag(Scene scene, Node itemsToMove) {
+            this.scene = scene;
+            this.itemsToMove = itemsToMove;
+            registerDragListener();
+        }
+
+        /**
+         * move all objects within the scene when a drag event occurs
+         */
+        private void registerDragListener() {
+            scene.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
+                mouseAnchorX = event.getSceneX();
+                mouseAnchorY = event.getSceneY();
+                canvasTranslateX = itemsToMove.getTranslateX();
+                canvasTranslateY = itemsToMove.getTranslateY();
+            });
+            scene.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
+                if (event.isPrimaryButtonDown()) { // only drag using the primary button
+                    itemsToMove.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / itemsToMove.getScaleX());
+                    itemsToMove.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / itemsToMove.getScaleY());
+                    event.consume();
+                }
+            });
+        }
     }
 
 }

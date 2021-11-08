@@ -1,6 +1,7 @@
 package org.cpvisu.shapes;
 
 import javafx.scene.Node;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
 
@@ -25,5 +26,7 @@ public interface VisualNode {
     public double getWidth();
 
     public Shape getArea();
+
+    public void setFill(Paint fill);
 
 }

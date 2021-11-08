@@ -5,6 +5,7 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
@@ -120,5 +121,10 @@ public class VisualTextRectangle extends Group implements VisualNode {
         this.area.setTranslateX(this.getTranslateX());
         this.area.setTranslateY(this.getTranslateY());
         return this.area;
+    }
+
+    @Override
+    public void setFill(Paint fill) {
+        rectangle.setFill(fill);
     }
 }

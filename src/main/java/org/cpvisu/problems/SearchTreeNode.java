@@ -86,4 +86,8 @@ public class SearchTreeNode<T> {
         return action;
     }
 
+    public void runAction() {
+        action.run();
+    }
+
 }
