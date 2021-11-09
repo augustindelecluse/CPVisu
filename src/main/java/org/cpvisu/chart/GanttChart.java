@@ -2,10 +2,7 @@ package org.cpvisu.chart;
 
 // based from : https://stackoverflow.com/questions/27975898/gantt-chart-from-scratch
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import javafx.beans.NamedArg;
 import javafx.collections.FXCollections;
@@ -18,6 +15,7 @@ import javafx.scene.chart.ValueAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.*;
+import org.cpvisu.examples.GanttChartSample;
 
 public class GanttChart<X,Y> extends XYChart<X,Y> {
 
@@ -270,6 +268,31 @@ public class GanttChart<X,Y> extends XYChart<X,Y> {
             if(xData != null) xa.invalidateRange(xData);
             if(yData != null) ya.invalidateRange(yData);
         }
+    }
+
+    /**
+     * set the css file that will be used to provide the layout for the elements
+     * either specify a css file in the same package or the complete path to a css file from another package
+     * @param stylesheet name of the css file (with extension) that will provide the layout for the elements
+     */
+    public void setStylesheet(String stylesheet) {
+        this.getStylesheets().add(getClass().getResource(stylesheet).toExternalForm());
+    }
+
+    /**
+     * add all given elements into the chart
+     * @param val elements that needs to be added to the chart
+     */
+    public void addAll(Collection<? extends Series<X, Y>> val) {
+        this.getData().addAll(val);
+    }
+
+    /**
+     * add an element into the chart
+     * @param val element that needs to be added to the chart
+     */
+    public void add(Series<X, Y> val) {
+        this.getData().add(val);
     }
 
 }

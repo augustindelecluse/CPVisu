@@ -75,7 +75,8 @@ public class GanttChartSample extends Application {
 
         chart.getData().addAll(series1, series2, series3, line);
 
-        chart.getStylesheets().add(getClass().getResource("ganttchart.css").toExternalForm());
+        //chart.getStylesheets().add(getClass().getResource("ganttchart.css").toExternalForm());
+        chart.setStylesheet("ganttchart.css");
 
         Scene scene  = new Scene(chart,620,350);
         stage.setScene(scene);
