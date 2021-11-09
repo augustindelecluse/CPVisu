@@ -1,5 +1,6 @@
 package org.cpvisu;
 
+import javafx.collections.ObservableList;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -28,16 +29,16 @@ public class VisualSearchTree {
     private ArrayList<Line> branches;
     private ArrayList<VisualTextRectangle> visualNodes;
     private Group pane;
-    private int offset = 100;
-    private int xLabelSpacing = 5;
-    private int yLabelSpacing = -5;
+    private int offset = 42;       // offset used when moving nodes
+    private int xLabelSpacing = 5;  // space between a node and its label branch, in x values
+    private int yLabelSpacing = -5; // space between a node and its label branch, in y values
 
     public VisualSearchTree(SearchTree searchTree) {
         this.searchTree = searchTree;
         fontHeight = (int) Math.ceil(new Text("").getBoundsInLocal().getHeight());
         pane = new Group();
         reset();
-        printCursorPosition();
+        //printCursorPosition();
     }
 
     /**
@@ -55,7 +56,6 @@ public class VisualSearchTree {
             levelHeight[i] = levelHeight[i-1] + (3 + maxLinesPerLevel[i-1]) * fontHeight;
         // draw the tree and its branches
         pane.getChildren().add(design(root, 0));
-        //group.setTranslateX(200);
         return pane;
     }
 
@@ -84,9 +84,12 @@ public class VisualSearchTree {
      */
     private GroupArea design(SearchTreeNode<String> node, int level) {
         Shape placed = new Rectangle(); // area occupied by all children
+
+
         GroupArea currentNode = new GroupArea();
         int nBranches = 0;
         for (SearchTreeNode<String> child : node.getSons()) {
+
             GroupArea visualChild = design(child, level+1); // design the child
             Shape childArea = visualChild.getArea(); // area of the current child
             // TODO compute that the label of the branch can be added without problem
@@ -95,7 +98,6 @@ public class VisualSearchTree {
             //    Text text = new Text(childArea.getTranslateX() + xLabelSpacing, childArea.getTranslateY() + yLabelSpacing, branchLabel);
             //}
             int valOffset = 0;
-
             while (intersectArea(placed, childArea)) { // as long as the child intersects the current area
                 childArea.setTranslateX(childArea.getTranslateX() + offset); // move the child to prevent the intersection
                 valOffset += offset;
@@ -105,6 +107,7 @@ public class VisualSearchTree {
             }
 
             placed = Shape.union(placed, childArea); // merge the area of the child with the current occupied area
+
             currentNode.getChildren().add(visualChild); // the group of the current node includes the children
             nBranches++;
         }
@@ -161,7 +164,6 @@ public class VisualSearchTree {
         currentDesign.setOnMousePressed((MouseEvent e) -> {
             node.runAction();
         });
-
         currentNode.add(currentDesign); // the layout of the current node includes the node itself
         return currentNode;
     }
@@ -195,8 +197,10 @@ public class VisualSearchTree {
         return true;
     }
 
+    /**
+     * print the position of the mouse
+     */
     private void printCursorPosition() {
-        /*
         AtomicBoolean scenePosted = new AtomicBoolean(false);
         pane.setOnMousePressed(e -> {
             System.out.printf("mouse at (%.3f, %.3f)\n", e.getSceneX(), e.getSceneY());
@@ -207,8 +211,14 @@ public class VisualSearchTree {
                 });
             }
         });
+    }
 
-         */
+    /**
+     * export the current tree as a tikz figure
+     * @return String corresponding to the tikz figure
+     */
+    public String toTikz() {
+        return null; // TODO tikz export
     }
 
 }
