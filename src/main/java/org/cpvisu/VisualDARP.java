@@ -8,6 +8,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
@@ -19,21 +20,27 @@ import org.cpvisu.shapes.VisualRectangle;
 import org.cpvisu.shapes.VisualNode;
 import org.cpvisu.util.colors.ColorFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.function.Function;
 
+/**
+ * visualisation for a dial-a-ride problem
+ * no checking of satisfiability occurs
+ */
 public class VisualDARP {
 
     private DARPInstance darp;
     private Function<DARPNode, VisualNode> drawingFunction;
     private Insets innerBorder; // strict area where all nodes are included
     private double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
-    private Group group;
+    private Pane pane;
     private VisualNode[] shapes;
-    private Group shapesGroup;
+    private Pane shapesGroup;
     private int width;
     private int height;
-    private Rectangle background;
-    private Scene scene;
+    private ArrayList<Integer>[] visitedBy; // contains the list of visited node for every vehicle
+    private int nVehicle;
 
     private double mouseAnchorX; // used for the position when dragging nodes
     private double mouseAnchorY;
@@ -45,12 +52,21 @@ public class VisualDARP {
         this.drawingFunction = drawingFunction;
         this.width = width;
         this.height = height;
+        nVehicle = darp.getNVehicle();
+        visitedBy = new ArrayList[nVehicle];
+        for (int i = 0 ; i < nVehicle; ++i)
+            visitedBy[i] = new ArrayList<>();
     }
 
     public VisualDARP(DARPInstance darp, int width, int height) {
         this(darp, width, height, VisualDARP::DefaultMapping);
     }
 
+    /**
+     * map a DARPNode into a VisualNode, that will be drawn on the screen
+     * @param node node that needs to be drawn on the screen
+     * @return visual representation of the node
+     */
     private static VisualNode DefaultMapping(DARPNode node) {
         double radius = 5;
         if (node.isDepot()) {
@@ -71,7 +87,11 @@ public class VisualDARP {
         return null;
     }
 
-    public Scene init() {
+    /**
+     * draw the nodes on the interface
+     * @return pane containing the nodes
+     */
+    public Pane nodeLayout() {
         Node[] shapes = new Node[darp.getNNodes()];
         this.shapes = new VisualNode[shapes.length];
         double minX = Double.MAX_VALUE;
@@ -107,30 +127,83 @@ public class VisualDARP {
             }
         }
         innerBorder = new Insets(threshold, threshold, width, height);
-        background = new Rectangle(0, 0, width, height);
-        background.setFill(Color.WHITE);
-        shapesGroup = new Group(shapes);
-        group = new Group(background, shapesGroup);
-        scene = new Scene(group, width, height);
+        shapesGroup = new Pane(shapes);
+        pane = new Pane(shapesGroup);
+        pane.setPrefHeight(height);
+        pane.setPrefWidth(width);
         registerScrollListener();
         registerDragListener();
-        return scene;
+        return pane;
+    }
+
+    /**
+     * gives the Gantt layout associated to a vehicle
+     * @return Gantt layout for a vehicle
+     */
+    public Pane GanttLayout(int vehicle) {
+        // iterate over the current nodes
+
+        return null;
+    }
+
+    /**
+     * add a route for a given vehicle
+     * does not reset the exiting route: the sequence of nodes will be added to the route
+     * @param vehicle vehicle whose route needs to be added
+     * @param visitedOrder order of visit for each node
+     */
+    public void addRoute(int vehicle, Integer... visitedOrder) {
+        visitedBy[vehicle].addAll(Arrays.asList(visitedOrder));
+    }
+
+    /**
+     * reset the route of a vehicle
+     * @param vehicle
+     */
+    public void resetRoute(int vehicle) {
+        visitedBy[vehicle].clear();
+    }
+
+    /**
+     * reset the route of every vehicle
+     */
+    public void resetAllRoutes() {
+        for (int vehicle = 0 ; vehicle < nVehicle ; ++vehicle)
+            resetRoute(vehicle);
+    }
+
+    /**
+     * set the last current visited node of a vehicle
+     * @param vehicle vehicle that will get a newly visited node
+     * @param node that will be visited by the vehicle
+     */
+    public void visit(int vehicle, int node) {
+        visitedBy[vehicle].add(node);
+    }
+
+    /**
+     * gives the nodes visited by a given vehicle, in order
+     * @param vehicle vehicle whose visit order needs to be known
+     * @return order of visit of the nodes for this vehicle
+     */
+    public ArrayList<Integer> getVehicleVisit(int vehicle) {
+        return visitedBy[vehicle];
     }
 
     /**
      * move all objects within the scene when a drag event occurs
      */
     public void registerDragListener() {
-        scene.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
+        pane.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
             mouseAnchorX = event.getSceneX();
             mouseAnchorY = event.getSceneY();
             canvasTranslateX = shapesGroup.getTranslateX();
             canvasTranslateY = shapesGroup.getTranslateY();
         });
-        scene.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
+        pane.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
             if (event.isPrimaryButtonDown()) { // only drag using the primary button
-                shapesGroup.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / group.getScaleX());
-                shapesGroup.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / group.getScaleY());
+                shapesGroup.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / pane.getScaleX());
+                shapesGroup.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / pane.getScaleY());
                 event.consume();
             }
         });
@@ -140,7 +213,7 @@ public class VisualDARP {
      * zoom in-out based on the mouse current position
      */
     public void registerScrollListener() {
-        scene.setOnScroll((ScrollEvent event) -> {
+        pane.setOnScroll((ScrollEvent event) -> {
             if (event.getDeltaY() != 0) {
                 event.consume();
                 double factor = 1.5;
@@ -151,12 +224,12 @@ public class VisualDARP {
                 if (event.getDeltaY() < 0) {
                     factor = 1.0 / factor;
                 }
-                double oldScale = group.getScaleX();
+                double oldScale = pane.getScaleX();
                 double scale = oldScale * factor;
                 double f = (scale / oldScale) - 1;
 
                 // determine offset that we will have to move the group
-                Bounds bounds = group.localToScene(group.getBoundsInLocal());
+                Bounds bounds = pane.localToScene(pane.getBoundsInLocal());
                 double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
                 double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
 
@@ -164,10 +237,10 @@ public class VisualDARP {
                 Timeline timeline = new Timeline();
                 timeline.getKeyFrames().clear();
                 timeline.getKeyFrames().addAll(
-                        new KeyFrame(Duration.millis(200), new KeyValue(group.translateXProperty(), group.getTranslateX() - f * dx)),
-                        new KeyFrame(Duration.millis(200), new KeyValue(group.translateYProperty(), group.getTranslateY() - f * dy)),
-                        new KeyFrame(Duration.millis(200), new KeyValue(group.scaleXProperty(), scale)),
-                        new KeyFrame(Duration.millis(200), new KeyValue(group.scaleYProperty(), scale))
+                        new KeyFrame(Duration.millis(150), new KeyValue(pane.translateXProperty(), pane.getTranslateX() - f * dx)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(pane.translateYProperty(), pane.getTranslateY() - f * dy)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(pane.scaleXProperty(), scale)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(pane.scaleYProperty(), scale))
                 );
                 timeline.play();
             }

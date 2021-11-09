@@ -1,8 +1,5 @@
 package org.cpvisu.shapes;
 
-import javafx.animation.Animation;
-import javafx.animation.TranslateTransition;
-import javafx.collections.ObservableList;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -11,9 +8,6 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Polyline;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
-import javafx.scene.text.Text;
-import javafx.util.Duration;
-import org.cpvisu.problems.SearchTreeNode;
 
 import static org.cpvisu.shapes.ShapeOperation.*;
 
@@ -27,6 +21,15 @@ public class GroupArea extends Pane {
         this.getChildren().add(child);
     }
 
+    /**
+     * compute the area of all elements included in the group
+     * current computation takes into account area from
+     * - Pane
+     * - Group
+     * - Shape (except line and polyline)
+     * - VisualNode
+     * @return area relative to this node and its component
+     */
     public Shape getArea() {
         Shape area = getAreaFromParent(this);
         //area.setTranslateX(this.getTranslateX() + area.getTranslateX());

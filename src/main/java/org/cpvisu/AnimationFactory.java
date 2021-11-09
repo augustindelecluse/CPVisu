@@ -221,10 +221,8 @@ public class AnimationFactory {
         TranslateTransition tt = new TranslateTransition(Duration.ONE, items);
         st.setDelay(delay);
         tt.setDelay(delay);
-        System.out.println("adding listener");
 
         ChangeListener<Number> listener = (observableValue, o, t1) -> {
-            System.out.println("in listener");
             st.stop();
             st.stop();
             double scaling = Math.min(scene.getWidth() / initWidth, scene.getHeight()/ initHeight);
@@ -243,6 +241,10 @@ public class AnimationFactory {
     public static void moveOnDrag(Scene scene, Node itemsToMove) {
         new MoveOnDrag(scene, itemsToMove);
     }
+
+    //public static void moveOnDrag(Node container, Node itemsToMove) {
+    //    new MoveOnDrag(scene, itemsToMove);
+    //}
 
     private static class MoveOnDrag {
 
