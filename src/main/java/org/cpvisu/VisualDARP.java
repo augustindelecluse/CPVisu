@@ -13,6 +13,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.util.Duration;
+import org.cpvisu.chart.DARPGanttChart;
 import org.cpvisu.problems.DARPInstance;
 import org.cpvisu.problems.DARPNode;
 import org.cpvisu.shapes.VisualCircle;
@@ -22,6 +23,8 @@ import org.cpvisu.util.colors.ColorFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Function;
 
 /**
@@ -41,6 +44,7 @@ public class VisualDARP {
     private int height;
     private ArrayList<Integer>[] visitedBy; // contains the list of visited node for every vehicle
     private int nVehicle;
+    private DARPNode[] nodeList;
 
     private double mouseAnchorX; // used for the position when dragging nodes
     private double mouseAnchorY;
@@ -56,6 +60,15 @@ public class VisualDARP {
         visitedBy = new ArrayList[nVehicle];
         for (int i = 0 ; i < nVehicle; ++i)
             visitedBy[i] = new ArrayList<>();
+        this.nodeList = new DARPNode[darp.getNNodes()];
+        int i = 0;
+        for (DARPNode node: darp.getBeginDepot())
+            nodeList[i++] = node;
+        for (DARPNode node: darp.getNodes())
+            nodeList[i++] = node;
+        for (DARPNode node: darp.getEndDepot())
+            nodeList[i++] = node;
+
     }
 
     public VisualDARP(DARPInstance darp, int width, int height) {
@@ -100,31 +113,27 @@ public class VisualDARP {
         double maxY = Double.MIN_VALUE;
         int i=0;
         // register the bounds for the coordinates
-        for (DARPNode[] nodeList: new DARPNode[][]{darp.getBeginDepot(), darp.getNodes(), darp.getEndDepot()}) {
-            for (DARPNode node: nodeList) {
-                minX = Math.min(minX, node.getX());
-                minY = Math.min(minY, node.getY());
-                maxX = Math.max(maxX, node.getX());
-                maxY = Math.max(maxY, node.getY());
-            }
+        for (DARPNode node: nodeList) {
+            minX = Math.min(minX, node.getX());
+            minY = Math.min(minY, node.getY());
+            maxX = Math.max(maxX, node.getX());
+            maxY = Math.max(maxY, node.getY());
         }
         // keep the lowest ratio for the transformation: the coordinate system should remain isometric
         double min = Math.min(minX, minY);
         double max = Math.max(maxX, maxY);
         double minWindow = Math.min(width, height);
         // space out the shapes so that they occupy the whole screen
-        for (DARPNode[] nodeList: new DARPNode[][]{darp.getBeginDepot(), darp.getNodes(), darp.getEndDepot()}) {
-            for (DARPNode node: nodeList) {
-                VisualNode shape = drawingFunction.apply(node);
-                double x = ((node.getX() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
-                double y = ((node.getY() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
-                TranslateTransition translateTransition = new TranslateTransition(Duration.ONE, shape.getNode());
-                translateTransition.setToX(x);
-                translateTransition.setToY(y);
-                translateTransition.play();
-                this.shapes[i] = shape;
-                shapes[i++] = shape.getNode();
-            }
+        for (DARPNode node: nodeList) {
+            VisualNode shape = drawingFunction.apply(node);
+            double x = ((node.getX() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
+            double y = ((node.getY() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
+            TranslateTransition translateTransition = new TranslateTransition(Duration.ONE, shape.getNode());
+            translateTransition.setToX(x);
+            translateTransition.setToY(y);
+            translateTransition.play();
+            this.shapes[i] = shape;
+            shapes[i++] = shape.getNode();
         }
         innerBorder = new Insets(threshold, threshold, width, height);
         shapesGroup = new Pane(shapes);
@@ -140,10 +149,68 @@ public class VisualDARP {
      * gives the Gantt layout associated to a vehicle
      * @return Gantt layout for a vehicle
      */
-    public Pane GanttLayout(int vehicle) {
+    public DARPGanttChart GanttLayout(int vehicle) {
         // iterate over the current nodes
+        String[] nodes = new String[visitedBy[vehicle].size()];
+        Integer[] ids = new Integer[nodes.length];
+        visitedBy[vehicle].toArray(ids);
+        DARPNode[] nodesVisited = getNodesWithId(ids); // retrieve the visited nodes
+        for (int i = 0; i < nodes.length ; ++i) {
+            //nodes[i] = String.format("node %d", nodesVisited[i].getId());
+            nodes[i] = String.format("node %d", ids[i]);
+        }
+        double[][] timeVisited = new double[nodes.length][2];  // set the time visited for each node
+        // the first node should be the depot, set the starting time visited from here
+        double timeReached = nodesVisited[0].getTwStart();
+        timeVisited[0][0] = timeReached;
+        timeReached += nodesVisited[0].getServingDuration();
+        for (int i = 1; i < nodes.length ; ++i) {
+            timeReached = timeReached + darp.getDistance(nodesVisited[i-1], nodesVisited[i]);
+            timeVisited[i][0] = timeReached;
+            // waiting at a node is allowed
+            timeReached = Math.max(timeReached, nodesVisited[i].getTwStart()) + nodesVisited[i].getServingDuration();
+        }
+        // set the ending time visited
+        timeReached = nodesVisited[nodes.length-1].getTwEnd();
+        timeVisited[nodes.length-1][1] = timeReached;
+        for (int i = nodes.length-2; i >= 0 ; --i) {
+            timeReached = timeReached - darp.getDistance(nodesVisited[i+1], nodesVisited[i]);
+            timeVisited[i][1] = timeReached;
+            timeReached = Math.min(timeReached, nodesVisited[i].getTwEnd());
+        }
+        // create the chart
+        DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
+        chart.setBlockHeight(20);
+        for (int i = 0; i < nodes.length ; ++i) {
+            System.out.println(String.format("%s : from %f -> %f", nodes[i], timeVisited[i][0], timeVisited[i][1]));
+            chart.setTimeSlot(nodes[i], nodesVisited[i].getTwStart(), nodesVisited[i].getTwEnd(), timeVisited[i][0], timeVisited[i][1]);
+            if (i < nodes.length-1)
+                chart.setTransition(nodes[i], Math.max(timeVisited[i][0], nodesVisited[i].getTwStart()) + nodesVisited[i].getServingDuration(), darp.getDistance(nodesVisited[i], nodesVisited[i+1]));
+        }
+        return chart;
+    }
 
-        return null;
+    /**
+     * retrieve the given nodes using their ids
+     * @param ids ids of the nodes we want to retrieve
+     * @return nodes with the corresponding ids
+     */
+    private DARPNode[] getNodesWithId(Integer... ids) {
+        DARPNode[] nodes = new DARPNode[ids.length];
+        /*
+        HashMap<Integer, Integer> nodeMapping = new HashMap();
+        for (int i = 0; i < ids.length; ++i)
+            nodeMapping.put(ids[i], i);
+        // iterate over the nodes provided
+        for (DARPNode node: nodeList) {
+            if (nodeMapping.containsKey(node.getId())) {
+                nodes[nodeMapping.get(node.getId())] = node;
+            }
+        }
+         */
+        for (int i = 0; i < ids.length ; ++i)
+            nodes[i] = nodeList[ids[i]];
+        return nodes;
     }
 
     /**

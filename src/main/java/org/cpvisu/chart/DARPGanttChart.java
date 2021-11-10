@@ -54,13 +54,15 @@ public class DARPGanttChart extends GanttChart<Number, String>{
     }
 
     /**
-     * set the transition line from a node to its successor
-     * @param node
-     * @param timeFrom
-     * @param timeTransition
+     * set a transition line from a node to its successor
+     * @param node node from which the transition occurs
+     * @param timeFrom starting time of the transition
+     * @param timeTransition duration time of the transition
      */
     public void setTransition(String node, double timeFrom, double timeTransition) {
-
+        XYChart.Series line = new XYChart.Series();
+        line.getData().add(new XYChart.Data(timeFrom, node, new Transition(timeTransition, "dashed-line")));
+        this.add(line);
     }
 
     /**

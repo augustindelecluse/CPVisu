@@ -3,6 +3,13 @@ package org.cpvisu.problems;
 import org.cpvisu.util.io.InputReader;
 import java.util.Arrays;
 
+/**
+ * Dial-A-Ride instance. Contains the information relative to the nodes and vehicle
+ * Numbering used for the nodes:
+ * - 0...nVehicle -> beginDepot
+ * - nVehicle...(2*nRequests-nVehicle) -> node
+ * - (2*nRequests-nVehicle)...end -> endDepot
+ */
 public class DARPInstance {
 
     private DARPNode[] beginDepot;  // begin depot, 1 per vehicle
@@ -40,16 +47,18 @@ public class DARPInstance {
         DARPNode[] endDepot = new DARPNode[nVehicle];
         int[] vehicleCapacityArray = new int[nVehicle];
         Arrays.fill(vehicleCapacityArray, vehicleCapacity);
-        // read the instance
+        // read the instance: begin depot
         beginDepot[0] = readLine(reader);
         for (int i=1; i < nVehicle; ++i)
             beginDepot[i] = beginDepot[0].deepCopy();
+        // read the instance: requests nodes
         for (int i = 0; i < nRequests; ++i)
             nodes[i] = readLine(reader);
         for (int i = 0; i < nRequests; ++i) {
             nodes[i + nRequests] = readLine(reader);
-            nodes[i + nRequests].setId(nodes[i].getId());
+            nodes[i + nRequests].setId(nodes[i].getId()); // the drop has the same id as the pickup
         }
+        // read the instance: end depot
         try {
             endDepot[0] = readLine(reader);
             endDepot[0].setId(beginDepot[0].getId());
@@ -138,6 +147,85 @@ public class DARPInstance {
 
     public int getNRequests() {
         return nodes.length / 2;
+    }
+
+    /**
+     * gives the distance between 2 nodes
+     * computed as the euclidean distance
+     * @param nodeA first node
+     * @param nodeB second node
+     * @return distance between the 2 nodes
+     */
+    public double getDistance(int nodeA, int nodeB) {
+        DARPNode DARPNodeA = getNode(nodeA);
+        DARPNode DARPNodeB = getNode(nodeB);
+        double dx = DARPNodeA.getX() - DARPNodeB.getX();
+        double dy = DARPNodeA.getY() - DARPNodeB.getY();
+        return Math.sqrt(dx*dx + dy*dy);
+    }
+
+    /**
+     * gives the distance between 2 nodes
+     * computed as the euclidean distance
+     * @param DARPNodeA first node
+     * @param DARPNodeB second node
+     * @return distance between the 2 nodes
+     */
+    public double getDistance(DARPNode DARPNodeA, DARPNode DARPNodeB) {
+        double dx = DARPNodeA.getX() - DARPNodeB.getX();
+        double dy = DARPNodeA.getY() - DARPNodeB.getY();
+        return Math.sqrt(dx*dx + dy*dy);
+    }
+
+    protected DARPNode getNode(int node) {
+        int nVehicle = getNVehicle();
+        return node < nVehicle ? beginDepot[node] : node < nodes.length + nVehicle ? nodes[node - nVehicle] : endDepot[node - nodes.length];
+    }
+
+    /**
+     * map the given numbering system into the inner numbering system
+     *
+     * example:
+     *      with 2 vehicles and 4 nodes, the inner representation is
+     *      - node[0, 1] -> begin nodes (comes first)
+     *      - node[2..5] -> requests nodes (comes second)
+     *      - node[6, 7] -> ending nodes (comes third)
+     *
+     *      mapNodes({0, 6, 3}, 0, 2, 1)
+     *
+     *      maps the nodes, indicating that in the given representation
+     *      - node[0, 1] -> begin nodes (comes first)
+     *      - node[2, 3] -> ending nodes (comes second)
+     *      - node[4..7] -> requests nodes (comes third)
+     *
+     *      the array is therefore changed to {0, 4, 7}
+     *
+     * @param order order that needs to be mapped to the inner representation
+     * @param rangeBeginDepot number in 0..2: indicates where the beginning depot are located
+     * @param rangeRequestNode number in 0..2: indicates where the nodes are located
+     * @param rangeEndDepot number in 0..2: indicates where the ending depot are located
+     */
+    public void mapNodes(Integer[] order, int rangeBeginDepot, int rangeRequestNode, int rangeEndDepot) {
+        int nVehicle = getNVehicle();
+        int nNodes = getNNodes();
+        int nRequests = getNRequests();
+        int nRequestsNodes = nRequests * 2;
+        int mapping = rangeBeginDepot*100+rangeRequestNode*10+rangeEndDepot;
+        switch (mapping) {
+            case 12: // default mapping, nothing to change
+                return;
+            case 102: // nodes, begin, end -> begin, nodes, end
+                for (int i = 0; i < order.length ; ++i) {
+                    if (order[i] < nRequestsNodes) // request node, needs to be mapped
+                        order[i] = order[i] + nVehicle; // the beginning nodes come before
+                    else if (order[i] < nRequestsNodes + nVehicle) // begin node, needs to be mapped
+                        order[i] = order[i] - nRequestsNodes; // the beginning nodes come before
+                }
+                return;
+            // TODO implement other mappings
+            default:
+                throw new IllegalArgumentException("invalid mapping specified");
+        }
     }
 
 }
