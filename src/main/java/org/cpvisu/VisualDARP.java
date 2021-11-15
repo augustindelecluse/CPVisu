@@ -12,11 +12,11 @@ import javafx.util.Duration;
 import org.cpvisu.chart.DARPGanttChart;
 import org.cpvisu.problems.DARPInstance;
 import org.cpvisu.problems.DARPNode;
+import org.cpvisu.problems.DARPNodeSolution;
+import org.cpvisu.problems.DARPSolution;
 import org.cpvisu.shapes.*;
 import org.cpvisu.util.colors.ColorFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.function.Function;
 
@@ -26,19 +26,16 @@ import java.util.function.Function;
  */
 public class VisualDARP {
 
+    private DARPSolution solution;
     private DARPInstance darp;
     private Function<DARPNode, VisualNode> drawingFunction;
-    private Insets innerBorder; // strict area where all nodes are included
-    private double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
+    private final double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
     private Pane pane;
-    private VisualNode[] shapes;
+    //private VisualNode[] shapes;
     private Pane shapesGroup;
-    private int width;
-    private int height;
-    private ArrayList<Integer>[] visitedBy; // contains the list of visited node for every vehicle
-    private int nVehicle;
-    private DARPNode[] nodeList;
-    private int selectedVehicle = 0; // current selected vehicle for the visualisation
+    private final int width;
+    private final int height;
+    private final DARPNode[] nodeList;
 
     private double mouseAnchorX; // used for the position when dragging nodes
     private double mouseAnchorY;
@@ -46,7 +43,6 @@ public class VisualDARP {
     private double canvasTranslateY;
 
     private final Color unselectedNode = Color.rgb(125, 125, 125, 0.8);
-    private final Color selectedRoute = Color.rgb(128,0,0,0.7);
 
     /**
      * create a Dial-A-Ride visualisation
@@ -60,10 +56,7 @@ public class VisualDARP {
         this.drawingFunction = drawingFunction;
         this.width = width;
         this.height = height;
-        nVehicle = darp.getNVehicle();
-        visitedBy = new ArrayList[nVehicle];
-        for (int i = 0 ; i < nVehicle; ++i)
-            visitedBy[i] = new ArrayList<>();
+        solution = new DARPSolution(darp);
         this.nodeList = new DARPNode[darp.getNNodes()];
         int i = 0;
         for (DARPNode node: darp.getBeginDepot())
@@ -93,18 +86,25 @@ public class VisualDARP {
     private static VisualNode DefaultMapping(DARPNode node) {
         double radius = 5;
         if (node.isDepot()) {
-            VisualCircle circle = new VisualCircle(node.getX(), node.getY(), radius);
-            return circle;
+            return new VisualCircle(node.getX(), node.getY(), radius);
         } else if (node.isPickup()) {
-            VisualCircle circle = new VisualCircle(node.getX(), node.getY(), radius);
-            return circle;
+            return new VisualCircle(node.getX(), node.getY(), radius);
         } else if (node.isDrop()) {
             double x = node.getX() - radius; // center the point
             double y = node.getY() - radius;
-            VisualRectangle rectangle = new VisualRectangle(x, y, radius * 2, radius * 2);
-            return rectangle;
+            VisualRectangle visualRectangle = new VisualRectangle(x, y, radius * 2, radius * 2);
+            visualRectangle.setRotate(45);
+            return visualRectangle;
         }
         return null;
+    }
+
+    /**
+     * draw the nodes on the interface, without an assigned vehicle
+     * @return pane containing the nodes
+     */
+    public Pane nodeLayout() {
+        return nodeLayout(-1);
     }
 
     /**
@@ -112,10 +112,10 @@ public class VisualDARP {
      * color the nodes in grey if they are not visited by the current vehicle, or in color otherwise
      * @return pane containing the nodes
      */
-    public Pane nodeLayout() {
+    public Pane nodeLayout(int vehicle) {
         Node[] shapes = new Node[darp.getNNodes()];
         VisualNode[] visualNode = new VisualNode[shapes.length];
-        this.shapes = new VisualNode[shapes.length];
+        //this.shapes = new VisualNode[shapes.length];
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
         double maxX = Double.MIN_VALUE;
@@ -132,7 +132,9 @@ public class VisualDARP {
         double max = Math.max(maxX, maxY);
         double minWindow = Math.min(width, height);
         // register the nodes that are visited by the current vehicle
-        HashSet<Integer> selectedRoute = new HashSet<>(visitedBy[selectedVehicle]);
+        HashSet<Integer> selectedRoute=null;
+        if (vehicle >= 0)
+            selectedRoute = new HashSet<>(solution.getNodes(vehicle).stream().map(i -> i.getDarpNode().getId()).toList());
         // space out the shapes so that they occupy the whole screen
         for (DARPNode node: nodeList) {
             VisualNode shape = drawingFunction.apply(node);
@@ -140,41 +142,44 @@ public class VisualDARP {
             double y = ((node.getY() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
             shape.moveTo(x, y);
             int i = node.getId();
-            this.shapes[i] = shape;
+            //this.shapes[i] = shape;
             visualNode[i] = shape;
-            if (!selectedRoute.contains(i))
+            if (selectedRoute != null && !selectedRoute.contains(i))
                 visualNode[i].setFill(unselectedNode);
-            else
-                visualNode[i].setFill(ColorFactory.getPalette("default").colorAt(node.getId()));
+            else {
+                int requestId = node.getRequestId();
+                Color color = requestId >= 0 ? ColorFactory.getPalette("default").colorAt(node.getRequestId()) : unselectedNode;
+                visualNode[i].setFill(color);
+            }
             shapes[i] = shape.getNode();
             // click listener to provide information related to the node
             shapes[i].setOnMousePressed(e -> {
                 System.out.println(node);
             });
         }
-        // plot the transition between the nodes
+        // plot the transition between the nodes for the current vehicle
         Pane transitions = new Pane();
         transitions.getStylesheets().add(getClass().getResource("visual-darp.css").toExternalForm());
-        for (ArrayList<Integer> parcours: visitedBy) {
-            int pred = 0;
-            int j = 0;
-            for (int succ: parcours) {
+        int pred = 0;
+        int j = 0;
+        if (vehicle >= 0) {
+            for (DARPNodeSolution nodeSolution : solution.getNodes(vehicle)) {
+                int succ = nodeSolution.getDarpNode().getId();
                 if (j != 0) {
                     // plot the transition between pred and succ
                     double xFrom = visualNode[pred].getCenterX() + shapes[pred].getTranslateX();
                     double yFrom = visualNode[pred].getCenterY() + shapes[pred].getTranslateY();
                     double xTo = visualNode[succ].getCenterX() + shapes[succ].getTranslateX();
                     double yTo = visualNode[succ].getCenterY() + shapes[succ].getTranslateY();
-                    VisualArrow myVisualArrow = new VisualArrow(xFrom, yFrom, xTo, yTo);
-                    myVisualArrow.getMainLine().getStyleClass().add("node-layout-transition-line");
-                    myVisualArrow.getTip().getStyleClass().add("node-layout-transition-tip");
-                    transitions.getChildren().add(myVisualArrow);
+                    VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo);
+                    transition.getMainLine().getStyleClass().add("node-layout-transition-line");
+                    transition.getTip().getStyleClass().add("node-layout-transition-tip");
+                    transitions.getChildren().add(transition);
                 }
                 ++j;
                 pred = succ;
             }
         }
-        innerBorder = new Insets(threshold, threshold, width, height);
         shapesGroup = new Pane(transitions, new Pane(shapes));
         pane = new Pane(shapesGroup);
         pane.setPrefHeight(height);
@@ -189,77 +194,32 @@ public class VisualDARP {
      * @return Gantt layout for a vehicle
      */
     public DARPGanttChart GanttLayout(int vehicle) {
-        // iterate over the current nodes
-        String[] nodes = new String[visitedBy[vehicle].size()];
-        Integer[] ids = new Integer[nodes.length];
-        visitedBy[vehicle].toArray(ids);
-        DARPNode[] nodesVisited = getNodesWithId(ids); // retrieve the visited nodes
-        for (int i = 0; i < nodes.length ; ++i) {
-            //nodes[i] = String.format("node %d", nodesVisited[i].getId());
-            nodes[i] = String.format("node %d", ids[i]);
+        String[] nodes = new String[solution.getNodes(vehicle).size()];
+        int i = 0;
+        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle)) {
+            DARPNode node = nodeSolution.getDarpNode();
+            nodes[i++] = String.format("node %d (%s)", node.getId(),
+                    node.isDepot() ? "Depot" : String.format("%c%d", node.isPickup() ? 'P' : 'D', node.getRequestId()));
         }
-        double[][] timeVisited = new double[nodes.length][2];  // set the time visited for each node
-        // the first node should be the depot, set the starting time visited from here
-        double timeReached = nodesVisited[0].getTwStart();
-        timeVisited[0][0] = timeReached;
-        timeReached += nodesVisited[0].getServingDuration();
-        for (int i = 1; i < nodes.length ; ++i) {
-            timeReached = timeReached + darp.getDistance(nodesVisited[i-1], nodesVisited[i]);
-            // waiting at a node is allowed
-            timeReached = Math.max(timeReached, nodesVisited[i].getTwStart());
-            timeVisited[i][0] = timeReached;
-            // add the service duration
-            timeReached += nodesVisited[i].getServingDuration();
-        }
-        // set the ending time visited
-        timeReached = nodesVisited[nodes.length-1].getTwEnd();
-        timeVisited[nodes.length-1][1] = timeReached;
-        for (int i = nodes.length-2; i >= 0 ; --i) {
-            // TODO check for max service time
-            timeReached = timeReached - darp.getDistance(nodesVisited[i+1], nodesVisited[i]);
-            timeReached = Math.min(timeReached, nodesVisited[i].getTwEnd());
-            timeVisited[i][1] = timeReached;
-        }
-        // create the chart
-        // TODO check that the max route time is respected
         DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
         chart.setBlockHeight(20);
-        double timeArrival = Math.max(timeVisited[0][0], nodesVisited[0].getTwStart()) + nodesVisited[0].getServingDuration() + darp.getDistance(nodesVisited[0], nodesVisited[1]);
-        chart.setTimeSlot(nodes[0], nodesVisited[0].getTwStart(), nodesVisited[0].getTwEnd(), timeVisited[0][0], timeVisited[0][1]);
-        chart.setTransition(nodes[0], Math.max(timeVisited[0][0], nodesVisited[0].getTwStart()) + nodesVisited[0].getServingDuration(), darp.getDistance(nodesVisited[0], nodesVisited[1]));
-
-        for (int i = 1; i < nodes.length ; ++i) {
-            System.out.println(String.format("%s : from %f -> %f", nodes[i], timeVisited[i][0], timeVisited[i][1]));
-            chart.setTimeSlot(nodes[i], nodesVisited[i].getTwStart(), nodesVisited[i].getTwEnd(), timeVisited[i][0], timeVisited[i][1], timeArrival);
-            if (i < nodes.length-1) {
-                chart.setTransition(nodes[i], Math.max(timeVisited[i][0], nodesVisited[i].getTwStart()) + nodesVisited[i].getServingDuration(), darp.getDistance(nodesVisited[i], nodesVisited[i + 1]));
-                timeArrival = Math.max(timeVisited[i][0], nodesVisited[i].getTwStart()) + nodesVisited[i].getServingDuration() + darp.getDistance(nodesVisited[i], nodesVisited[i+1]);
+        i = 0;
+        double timeArrival = 0.;
+        DARPNodeSolution pred = null;
+        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle)) {
+            if (i==0)
+                timeArrival = nodeSolution.getEat();
+            else
+                timeArrival = Math.max(pred.getEat(), pred.getDarpNode().getTwStart()) + pred.getDarpNode().getServingDuration() + darp.getDistance(pred.getDarpNode(), nodeSolution.getDarpNode());
+            chart.setTimeSlot(nodes[i], nodeSolution.getDarpNode().getTwStart(), nodeSolution.getDarpNode().getTwEnd(), nodeSolution.getEat(), nodeSolution.getLat(), timeArrival);
+            if (i > 0) {
+                chart.setTransition(nodes[i-1], Math.max(pred.getEat(), pred.getDarpNode().getTwStart()) + pred.getDarpNode().getServingDuration(),
+                        darp.getDistance(pred.getDarpNode(), nodeSolution.getDarpNode()));
             }
+            pred = nodeSolution;
+            ++i;
         }
         return chart;
-    }
-
-    /**
-     * retrieve the given nodes using their ids
-     * @param ids ids of the nodes we want to retrieve
-     * @return nodes with the corresponding ids
-     */
-    private DARPNode[] getNodesWithId(Integer... ids) {
-        DARPNode[] nodes = new DARPNode[ids.length];
-        /*
-        HashMap<Integer, Integer> nodeMapping = new HashMap();
-        for (int i = 0; i < ids.length; ++i)
-            nodeMapping.put(ids[i], i);
-        // iterate over the nodes provided
-        for (DARPNode node: nodeList) {
-            if (nodeMapping.containsKey(node.getId())) {
-                nodes[nodeMapping.get(node.getId())] = node;
-            }
-        }
-         */
-        for (int i = 0; i < ids.length ; ++i)
-            nodes[i] = nodeList[ids[i]];
-        return nodes;
     }
 
     /**
@@ -269,7 +229,7 @@ public class VisualDARP {
      * @param visitedOrder order of visit for each node
      */
     public void addRoute(int vehicle, Integer... visitedOrder) {
-        visitedBy[vehicle].addAll(Arrays.asList(visitedOrder));
+        solution.addVisit(vehicle, visitedOrder);
     }
 
     /**
@@ -277,15 +237,14 @@ public class VisualDARP {
      * @param vehicle
      */
     public void resetRoute(int vehicle) {
-        visitedBy[vehicle].clear();
+        solution.resetVisit(vehicle);
     }
 
     /**
      * reset the route of every vehicle
      */
     public void resetAllRoutes() {
-        for (int vehicle = 0 ; vehicle < nVehicle ; ++vehicle)
-            resetRoute(vehicle);
+        solution.resetAllVisits();
     }
 
     /**
@@ -294,16 +253,7 @@ public class VisualDARP {
      * @param node that will be visited by the vehicle
      */
     public void visit(int vehicle, int node) {
-        visitedBy[vehicle].add(node);
-    }
-
-    /**
-     * gives the nodes visited by a given vehicle, in order
-     * @param vehicle vehicle whose visit order needs to be known
-     * @return order of visit of the nodes for this vehicle
-     */
-    public ArrayList<Integer> getVehicleVisit(int vehicle) {
-        return visitedBy[vehicle];
+        solution.addVisit(vehicle, node);
     }
 
     /**

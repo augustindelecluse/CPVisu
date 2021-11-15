@@ -10,10 +10,13 @@ public class DARPNode extends TimeWindowNode {
     protected int id; // id of the node
 
     // values assigned when the node is visited. Negative values are ignored
+    /*
     protected int cumulCapacity=-1;
     protected double eat=-1; // earliest arrival time
     protected double lat=-1; // latest arrival time
     protected int vehicle=-1; // vehicle assigned to the node
+
+     */
 
     /**
      * create a node for a Dial-A-Ride problem
@@ -33,16 +36,19 @@ public class DARPNode extends TimeWindowNode {
         this.requestId = requestId;
     }
 
+    public DARPNode(DARPNode node) {
+        super(node.getX(), node.getY(), node.getServingDuration(), node.getTwStart(), node.getTwEnd());
+        this.capacity = node.getCapacity();
+        this.id = node.getId();
+        this.requestId = node.getRequestId();
+    }
+
     /**
      * create a copy of the node with the same values
      * @return copy of the current node
      */
     public DARPNode deepCopy() {
         DARPNode copy = new DARPNode(x, y, servingDuration, capacity, twStart, twEnd, id, requestId);
-        copy.setEat(eat);
-        copy.setLat(lat);
-        copy.setCumulCapacity(cumulCapacity);
-        copy.setVehicle(vehicle);
         return copy;
     }
 
@@ -72,70 +78,19 @@ public class DARPNode extends TimeWindowNode {
         this.requestId = requestId;
     }
 
-    public int getCumulCapacity() {
-        return cumulCapacity;
-    }
-
-    public void setCumulCapacity(int cumulCapacity) {
-        this.cumulCapacity = cumulCapacity;
-    }
-
-    /**
-     * get the earliest arrival time
-     * @return earliest arrival time
-     */
-    public double getEat() {
-        return eat;
-    }
-
-    /**
-     * set the earliest arrival time
-     * @param eat earliest arrival time
-     */
-    public void setEat(double eat) {
-        this.eat = eat;
-    }
-
-    /**
-     * set the latest arrival time
-     * @return latest arrival time
-     */
-    public double getLat() {
-        return lat;
-    }
-
-    /**
-     * set the latest arrival time
-     * @param lat latest arrival time
-     */
-    public void setLat(double lat) {
-        this.lat = lat;
-    }
-
-    public int getVehicle() {
-        return vehicle;
-    }
-
-    public void setVehicle(int vehicle) {
-        this.vehicle = vehicle;
-    }
-
     /**
      * information relative to the node
      * Additional information are provided if the node is visited (assigned vehicle, earliest / latest arrival time, ...)
      */
     @Override
     public String toString() {
-        String visitedTime = (eat >= 0 && lat >= 0) ? String.format("Visited at [%.3f %.3f]", eat, lat) : "not visited";
-        String visitedVehicle = (vehicle >= 0) ? String.format(" by vehicle %d", vehicle): "";
-        String cumulCapa = cumulCapacity >= 0 ? String.format("\nAccumulated capacity = %d", cumulCapacity) : "";
         return String.format("""
-                        node %d (%-6s) %s
+                        node %d (%-6s) at (%.2f,%.2f) %s
                         Available in [%.3f %.3f]
-                          %s%s%s""",
-                id, isPickup() ? "Pickup" : isDrop() ? "Drop" : "Depot",
+                          """,
+                id, isPickup() ? "Pickup" : isDrop() ? "Drop" : "Depot", x, y,
                 isDepot() ? "" : String.format(": request %d, capacity at node = %d", requestId, capacity),
-                twStart, twEnd, visitedTime, visitedVehicle, cumulCapa);
+                twStart, twEnd);
     }
 
 }

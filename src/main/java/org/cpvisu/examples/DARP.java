@@ -34,24 +34,16 @@ public class DARP extends VisualApplication {
          */
 
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
-        visualDARP.addRoute(0, order);
+        int vehicle = 0;
+        visualDARP.addRoute(vehicle, order);
+
         Pane pane = visualDARP.nodeLayout();
 
-        /*
-        // chart visualisation
-        String[] nodes = {"node 1", "node 2", "node 3"};
-        DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
-        chart.setTimeSlot(nodes[0], 0, 100, 20, 30);
-        chart.setTimeSlot(nodes[1], 0, 100, 40, 50);
-        chart.setTimeSlot(nodes[2], 0, 200, 60, 200);
-        chart.setTransition(nodes[0], 20, 20);
-        chart.setTransition(nodes[1], 40, 10);
-         */
-        DARPGanttChart chart = visualDARP.GanttLayout(0);
+        DARPGanttChart chart = visualDARP.GanttLayout(vehicle);
+
         splitPane.getItems().addAll(pane, chart);
         Scene scene = new Scene(splitPane, width + 500, height);
         stage.setTitle("Dial-A-Ride Problem");
-        //autoResize(scene, true);
         return scene;
     }
 }

@@ -242,10 +242,6 @@ public class AnimationFactory {
         new MoveOnDrag(scene, itemsToMove);
     }
 
-    //public static void moveOnDrag(Node container, Node itemsToMove) {
-    //    new MoveOnDrag(scene, itemsToMove);
-    //}
-
     private static class MoveOnDrag {
 
         private Scene scene;

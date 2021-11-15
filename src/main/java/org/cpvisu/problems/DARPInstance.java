@@ -136,6 +136,10 @@ public class DARPInstance {
         return vehicleCapacity;
     }
 
+    public int getVehicleCapacity(int vehicle) {
+        return vehicleCapacity[vehicle];
+    }
+
     public int getMaxRideTime() {
         return maxRideTime;
     }
