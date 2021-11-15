@@ -21,7 +21,6 @@ public class SearchTreeApplication extends VisualApplication {
     public Scene application(Stage stage) {
         searchTree = new SearchTree();
 
-
         searchTree.addBranch(0, 1, null, "node 0 to 1", () -> System.out.println("I'm node 1"));
         searchTree.addBranch(1, 2, null, "node 1 to 2", () -> System.out.println("I'm node 2"));
         searchTree.addBranch(1, 3, null, "node 1 to 3", () -> System.out.println("I'm node 3"));

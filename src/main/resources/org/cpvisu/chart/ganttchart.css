@@ -1,5 +1,5 @@
 .status-red {
-    -fx-background-color:rgba(128,0,0,0.7);
+    -fx-background-color:rgba(128,0,0,0.5);
 }
 .status-green {
     -fx-background-color:rgba(0,128,0,0.7);
@@ -12,6 +12,6 @@
 }
 .dashed-line {
     -fx-stroke-width: 2;
-    -fx-stroke:rgba(128,128,128,0.7);
+    -fx-stroke:rgba(128,0,0,0.5);
     -fx-stroke-dash-array: 8;
 }

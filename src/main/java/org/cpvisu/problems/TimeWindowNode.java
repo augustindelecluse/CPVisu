@@ -5,11 +5,11 @@ package org.cpvisu.problems;
  */
 public class TimeWindowNode extends TSPNode {
 
-    protected int twStart;
-    protected int twEnd;
-    protected int servingDuration;
+    protected double twStart;
+    protected double twEnd;
+    protected double servingDuration;
 
-    public TimeWindowNode(double x, double y, int servingDuration, int twStart, int twEnd) {
+    public TimeWindowNode(double x, double y, double servingDuration, double twStart, double twEnd) {
         super(x, y);
         assert (twEnd >= twStart);
         this.twStart = twStart;
@@ -17,15 +17,15 @@ public class TimeWindowNode extends TSPNode {
         this.servingDuration = servingDuration;
     }
 
-    public int getTwStart() {
+    public double getTwStart() {
         return twStart;
     }
 
-    public int getTwEnd() {
+    public double getTwEnd() {
         return twEnd;
     }
 
-    public int getServingDuration() {
+    public double getServingDuration() {
         return servingDuration;
     }
 

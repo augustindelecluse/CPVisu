@@ -28,7 +28,9 @@ public class VisualRectangle extends Rectangle implements VisualNode {
 
     @Override
     public void moveTo(double x, double y) {
-        moveTo(Duration.ONE, x, y);
+        this.setTranslateX(x - this.getX());
+        this.setTranslateY(y - this.getY());
+        //moveTo(Duration.ONE, x, y);
     }
 
     @Override

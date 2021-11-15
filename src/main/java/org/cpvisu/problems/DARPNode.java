@@ -1,21 +1,49 @@
 package org.cpvisu.problems;
 
 /**
- * represent a node for a DARP problem: it includes time window and capacity
+ * represent a node for a Dial-A-Ride problem: it includes time window, capacity and id of the corresponding node
  */
 public class DARPNode extends TimeWindowNode {
 
     protected int capacity;
-    protected int id; // used to identify pairs of pickup and drop
+    protected int requestId; // used to identify pairs of pickup and drop. negative means depot
+    protected int id; // id of the node
 
-    public DARPNode(double x, double y, int servingDuration, int capacity, int twStart, int twEnd, int id) {
+    // values assigned when the node is visited. Negative values are ignored
+    protected int cumulCapacity=-1;
+    protected double eat=-1; // earliest arrival time
+    protected double lat=-1; // latest arrival time
+    protected int vehicle=-1; // vehicle assigned to the node
+
+    /**
+     * create a node for a Dial-A-Ride problem
+     * @param x x location of the node
+     * @param y y location of the node
+     * @param servingDuration serving duration to perform the task at the node
+     * @param capacity capacity of the node. Pickup have positive capacity, drop negative capacity and depot zero capacity
+     * @param twStart earliest arrival time at the node
+     * @param twEnd latest arrival time at the node
+     * @param id id of the node
+     * @param requestId id of the request associated at the node. Irrelevant (and negative) if the node is a depot
+     */
+    public DARPNode(double x, double y, double servingDuration, int capacity, double twStart, double twEnd, int id, int requestId) {
         super(x, y, servingDuration, twStart, twEnd);
         this.capacity = capacity;
         this.id = id;
+        this.requestId = requestId;
     }
 
+    /**
+     * create a copy of the node with the same values
+     * @return copy of the current node
+     */
     public DARPNode deepCopy() {
-        return new DARPNode(x, y, servingDuration, capacity, twStart, twEnd, id);
+        DARPNode copy = new DARPNode(x, y, servingDuration, capacity, twStart, twEnd, id, requestId);
+        copy.setEat(eat);
+        copy.setLat(lat);
+        copy.setCumulCapacity(cumulCapacity);
+        copy.setVehicle(vehicle);
+        return copy;
     }
 
     public int getCapacity() {
@@ -34,6 +62,80 @@ public class DARPNode extends TimeWindowNode {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(int requestId) {
+        this.requestId = requestId;
+    }
+
+    public int getCumulCapacity() {
+        return cumulCapacity;
+    }
+
+    public void setCumulCapacity(int cumulCapacity) {
+        this.cumulCapacity = cumulCapacity;
+    }
+
+    /**
+     * get the earliest arrival time
+     * @return earliest arrival time
+     */
+    public double getEat() {
+        return eat;
+    }
+
+    /**
+     * set the earliest arrival time
+     * @param eat earliest arrival time
+     */
+    public void setEat(double eat) {
+        this.eat = eat;
+    }
+
+    /**
+     * set the latest arrival time
+     * @return latest arrival time
+     */
+    public double getLat() {
+        return lat;
+    }
+
+    /**
+     * set the latest arrival time
+     * @param lat latest arrival time
+     */
+    public void setLat(double lat) {
+        this.lat = lat;
+    }
+
+    public int getVehicle() {
+        return vehicle;
+    }
+
+    public void setVehicle(int vehicle) {
+        this.vehicle = vehicle;
+    }
+
+    /**
+     * information relative to the node
+     * Additional information are provided if the node is visited (assigned vehicle, earliest / latest arrival time, ...)
+     */
+    @Override
+    public String toString() {
+        String visitedTime = (eat >= 0 && lat >= 0) ? String.format("Visited at [%.3f %.3f]", eat, lat) : "not visited";
+        String visitedVehicle = (vehicle >= 0) ? String.format(" by vehicle %d", vehicle): "";
+        String cumulCapa = cumulCapacity >= 0 ? String.format("\nAccumulated capacity = %d", cumulCapacity) : "";
+        return String.format("""
+                        node %d (%-6s) %s
+                        Available in [%.3f %.3f]
+                          %s%s%s""",
+                id, isPickup() ? "Pickup" : isDrop() ? "Drop" : "Depot",
+                isDepot() ? "" : String.format(": request %d, capacity at node = %d", requestId, capacity),
+                twStart, twEnd, visitedTime, visitedVehicle, cumulCapa);
     }
 
 }

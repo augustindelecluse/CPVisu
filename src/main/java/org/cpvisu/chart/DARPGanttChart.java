@@ -41,10 +41,27 @@ public class DARPGanttChart extends GanttChart<Number, String>{
      * @param visitEnd end of the visited time window
      */
     public void setTimeSlot(String node, double twStart, double twEnd, double visitStart, double visitEnd) {
+        setTimeSlot(node, twStart, twEnd, visitStart, visitEnd, visitStart);
+    }
+
+    /**
+     * add a time block for a given node, with its fully available time window, its visited time window and its reaching time window
+     * if the visited time window is invalid, only the available time window will be drawn
+     * @param node node whose time window needs to be specified
+     * @param twStart start of the available time window
+     * @param twEnd end of the available time window
+     * @param visitStart start of the visited time window
+     * @param visitEnd end of the visited time window
+     * @param reached time when the node is reached
+     */
+    public void setTimeSlot(String node, double twStart, double twEnd, double visitStart, double visitEnd, double reached) {
         XYChart.Series series = new XYChart.Series();
         assert (twStart <= twEnd);
         if (twStart <= visitStart && visitStart <= visitEnd && visitEnd <= twEnd) {
-            series.getData().add(new XYChart.Data(twStart, node, new TimeBlock( visitStart-twStart, "status-gray")));
+            if (reached > twStart)
+                series.getData().add(new XYChart.Data(twStart, node, new TimeBlock( visitStart-twStart, "status-gray")));
+            else
+                series.getData().add(new XYChart.Data(reached, node, new TimeBlock( visitStart-reached, "status-red")));
             series.getData().add(new XYChart.Data(visitStart, node, new TimeBlock( visitEnd-visitStart, "status-green")));
             series.getData().add(new XYChart.Data(visitEnd, node, new TimeBlock( twEnd-visitEnd, "status-gray")));
         } else { // attempt to only draw the time window

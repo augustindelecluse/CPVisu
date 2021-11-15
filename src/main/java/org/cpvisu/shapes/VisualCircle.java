@@ -31,7 +31,8 @@ public class VisualCircle extends Circle implements VisualNode {
 
     @Override
     public void moveTo(double x, double y) {
-        moveTo(Duration.ONE, x, y);
+        this.setTranslateX(x - this.getCenterX());
+        this.setTranslateY(y - this.getCenterY());
     }
 
     @Override

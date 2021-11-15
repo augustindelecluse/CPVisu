@@ -9,6 +9,7 @@ import java.util.Arrays;
  * - 0...nVehicle -> beginDepot
  * - nVehicle...(2*nRequests-nVehicle) -> node
  * - (2*nRequests-nVehicle)...end -> endDepot
+ * this numbering is set as the id of each DARPNode
  */
 public class DARPInstance {
 
@@ -32,7 +33,7 @@ public class DARPInstance {
     /**
      * create a DARP instance from a file
      * @param filename filename to the DARP instance
-     * @return
+     * @return DARP instance associated to the file
      */
     public static DARPInstance readFromFile(String filename) {
         InputReader reader = new InputReader(filename);
@@ -48,32 +49,42 @@ public class DARPInstance {
         int[] vehicleCapacityArray = new int[nVehicle];
         Arrays.fill(vehicleCapacityArray, vehicleCapacity);
         // read the instance: begin depot
-        beginDepot[0] = readLine(reader);
-        for (int i=1; i < nVehicle; ++i)
+        int cnt = 0;
+        beginDepot[0] = readLine(reader, cnt++, -1);
+        for (int i=1; i < nVehicle; ++i) {
             beginDepot[i] = beginDepot[0].deepCopy();
+            beginDepot[i].setId(cnt++);
+        }
         // read the instance: requests nodes
         for (int i = 0; i < nRequests; ++i)
-            nodes[i] = readLine(reader);
+            nodes[i] = readLine(reader, cnt++, i);
         for (int i = 0; i < nRequests; ++i) {
-            nodes[i + nRequests] = readLine(reader);
-            nodes[i + nRequests].setId(nodes[i].getId()); // the drop has the same id as the pickup
+            nodes[i + nRequests] = readLine(reader, cnt++, i);
         }
         // read the instance: end depot
         try {
-            endDepot[0] = readLine(reader);
-            endDepot[0].setId(beginDepot[0].getId());
+            endDepot[0] = readLine(reader, cnt++, -1);
         } catch (RuntimeException e) {
-            endDepot[0] = beginDepot[0]; // on some instances, the end depot is not specified and corresponds to the begin depot
+            endDepot[0] = beginDepot[0].deepCopy(); // on some instances, the end depot is not specified and corresponds to the begin depot
+            endDepot[0].setId(cnt++);
         }
-        for (int i=1; i < nVehicle; ++i)
+        for (int i=1; i < nVehicle; ++i) {
             endDepot[i] = endDepot[0].deepCopy();
+            endDepot[i].setId(cnt++);
+        }
         return new DARPInstance(beginDepot, endDepot, nodes, vehicleCapacityArray, maxRideTime, timeHorizon);
     }
 
     private static DARPNode readLine(InputReader reader) {
         int id = reader.getInt();
         return new DARPNode(reader.getDouble(), reader.getDouble(), reader.getInt(),
-                reader.getInt(), reader.getInt(), reader.getInt(), id);
+                reader.getInt(), reader.getInt(), reader.getInt(), id, id);
+    }
+
+    private static DARPNode readLine(InputReader reader, int id, int requestId) {
+        reader.getInt(); // skip the first entry
+        return new DARPNode(reader.getDouble(), reader.getDouble(), reader.getInt(),
+                reader.getInt(), reader.getInt(), reader.getInt(), id, requestId);
     }
 
     /**
@@ -147,21 +158,6 @@ public class DARPInstance {
 
     public int getNRequests() {
         return nodes.length / 2;
-    }
-
-    /**
-     * gives the distance between 2 nodes
-     * computed as the euclidean distance
-     * @param nodeA first node
-     * @param nodeB second node
-     * @return distance between the 2 nodes
-     */
-    public double getDistance(int nodeA, int nodeB) {
-        DARPNode DARPNodeA = getNode(nodeA);
-        DARPNode DARPNodeB = getNode(nodeB);
-        double dx = DARPNodeA.getX() - DARPNodeB.getX();
-        double dy = DARPNodeA.getY() - DARPNodeB.getY();
-        return Math.sqrt(dx*dx + dy*dy);
     }
 
     /**

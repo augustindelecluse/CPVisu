@@ -1,0 +1,8 @@
+.node-layout-transition-line {
+    -fx-stroke:rgba(128,0,0,0.7);
+    -fx-stroke-width: 2;
+    -fx-stroke-dash-array: 8;
+}
+.node-layout-transition-tip {
+    -fx-fill:rgba(128,0,0);
+}

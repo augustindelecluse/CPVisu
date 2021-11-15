@@ -34,6 +34,7 @@ public class DARP extends VisualApplication {
          */
 
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
+        visualDARP.addRoute(0, order);
         Pane pane = visualDARP.nodeLayout();
 
         /*
@@ -46,7 +47,6 @@ public class DARP extends VisualApplication {
         chart.setTransition(nodes[0], 20, 20);
         chart.setTransition(nodes[1], 40, 10);
          */
-        visualDARP.addRoute(0, order);
         DARPGanttChart chart = visualDARP.GanttLayout(0);
         splitPane.getItems().addAll(pane, chart);
         Scene scene = new Scene(splitPane, width + 500, height);
