@@ -17,6 +17,7 @@ import org.cpvisu.problems.DARPSolution;
 import org.cpvisu.shapes.*;
 import org.cpvisu.util.colors.ColorFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Function;
 
@@ -132,9 +133,18 @@ public class VisualDARP {
         double max = Math.max(maxX, maxY);
         double minWindow = Math.min(width, height);
         // register the nodes that are visited by the current vehicle
-        HashSet<Integer> selectedRoute=null;
-        if (vehicle >= 0)
-            selectedRoute = new HashSet<>(solution.getNodes(vehicle).stream().map(i -> i.getDarpNode().getId()).toList());
+        HashSet<Integer> selectedRoute = null;
+        HashMap<Integer, Color> colorRoute = new HashMap<>();
+        if (vehicle >= 0) { // a specific path for a vehicle needs to be drawn
+            selectedRoute = new HashSet<>();
+            int i = 0; // used to increment color count
+            for (DARPNodeSolution nodeSolution : solution.getNodes(vehicle)) {
+                int requestId = nodeSolution.getDarpNode().getRequestId();
+                if (!colorRoute.containsKey(requestId) && requestId >= 0)
+                    colorRoute.put(requestId, ColorFactory.getPalette("default").colorAt(i++));
+                selectedRoute.add(nodeSolution.getDarpNode().getId());
+            }
+        }
         // space out the shapes so that they occupy the whole screen
         for (DARPNode node: nodeList) {
             VisualNode shape = drawingFunction.apply(node);
@@ -142,13 +152,12 @@ public class VisualDARP {
             double y = ((node.getY() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
             shape.moveTo(x, y);
             int i = node.getId();
-            //this.shapes[i] = shape;
             visualNode[i] = shape;
             if (selectedRoute != null && !selectedRoute.contains(i))
                 visualNode[i].setFill(unselectedNode);
             else {
                 int requestId = node.getRequestId();
-                Color color = requestId >= 0 ? ColorFactory.getPalette("default").colorAt(node.getRequestId()) : unselectedNode;
+                Color color = colorRoute.getOrDefault(requestId, requestId >= 0 ? ColorFactory.getPalette("default").colorAt(node.getRequestId()) : unselectedNode);
                 visualNode[i].setFill(color);
             }
             shapes[i] = shape.getNode();
@@ -171,7 +180,7 @@ public class VisualDARP {
                     double yFrom = visualNode[pred].getCenterY() + shapes[pred].getTranslateY();
                     double xTo = visualNode[succ].getCenterX() + shapes[succ].getTranslateX();
                     double yTo = visualNode[succ].getCenterY() + shapes[succ].getTranslateY();
-                    VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo);
+                    VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo, 0.5);
                     transition.getMainLine().getStyleClass().add("node-layout-transition-line");
                     transition.getTip().getStyleClass().add("node-layout-transition-tip");
                     transitions.getChildren().add(transition);

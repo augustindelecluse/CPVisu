@@ -23,8 +23,6 @@ public class DARP extends VisualApplication {
 
         // x, y visualisation
         DARPInstance instance = DARPInstance.readFromFile("data/darp/Cordeau/a3-24.txt");
-        Integer [] order = new Integer[] {49, 15, 39, 1, 25, 9, 33, 14, 38, 5, 29, 52};
-        instance.mapNodes(order, 1, 0, 2);
 
         // possible solution for this instance:
         /*
@@ -33,11 +31,15 @@ public class DARP extends VisualApplication {
          * 50 -> 19 -> 43 -> 17 -> 41 -> 12 -> 18 -> 36 -> 42 -> 16 ->  3 -> 40 -> 27 -> 53
          */
 
+        Integer [] order = new Integer[] {49, 15, 39, 1, 25, 9, 33, 14, 38, 5, 29, 52};
+        // the numbering in this system is not the same as in the instance, mapping it
+        instance.mapNodes(order, 1, 0, 2);
+
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
         int vehicle = 0;
         visualDARP.addRoute(vehicle, order);
 
-        Pane pane = visualDARP.nodeLayout();
+        Pane pane = visualDARP.nodeLayout(0);
 
         DARPGanttChart chart = visualDARP.GanttLayout(vehicle);
 
