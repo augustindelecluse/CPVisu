@@ -93,4 +93,12 @@ public class DARPNode extends TimeWindowNode {
                 twStart, twEnd);
     }
 
+    /**
+     * gives a short description of the node: its id, type and request id
+     * @return short description of the node
+     */
+    public String shortDescription() {
+        return String.format("node %d (%s)", id, isDepot()? "Depot" : String.format("%c%d", isPickup() ? 'P' : 'D', requestId));
+    }
+
 }

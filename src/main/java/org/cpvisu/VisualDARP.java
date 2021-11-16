@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Function;
 
+import static org.cpvisu.AnimationFactory.moveOnDrag;
+import static org.cpvisu.AnimationFactory.zoomOnSCroll;
+
 /**
  * visualisation for a dial-a-ride problem
  * no checking of satisfiability occurs
@@ -32,16 +35,10 @@ public class VisualDARP {
     private Function<DARPNode, VisualNode> drawingFunction;
     private final double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
     private Pane pane;
-    //private VisualNode[] shapes;
     private Pane shapesGroup;
     private final int width;
     private final int height;
     private final DARPNode[] nodeList;
-
-    private double mouseAnchorX; // used for the position when dragging nodes
-    private double mouseAnchorY;
-    private double canvasTranslateX;
-    private double canvasTranslateY;
 
     private final Color unselectedNode = Color.rgb(125, 125, 125, 0.8);
 
@@ -193,8 +190,8 @@ public class VisualDARP {
         pane = new Pane(shapesGroup);
         pane.setPrefHeight(height);
         pane.setPrefWidth(width);
-        registerScrollListener();
-        registerDragListener();
+        zoomOnSCroll(pane);
+        moveOnDrag(pane, shapesGroup);
         return pane;
     }
 
@@ -205,15 +202,12 @@ public class VisualDARP {
     public DARPGanttChart GanttLayout(int vehicle) {
         String[] nodes = new String[solution.getNodes(vehicle).size()];
         int i = 0;
-        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle)) {
-            DARPNode node = nodeSolution.getDarpNode();
-            nodes[i++] = String.format("node %d (%s)", node.getId(),
-                    node.isDepot() ? "Depot" : String.format("%c%d", node.isPickup() ? 'P' : 'D', node.getRequestId()));
-        }
+        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle))
+            nodes[i++] = nodeSolution.getDarpNode().shortDescription();
         DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
         chart.setBlockHeight(20);
         i = 0;
-        double timeArrival = 0.;
+        double timeArrival;
         DARPNodeSolution pred = null;
         for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle)) {
             if (i==0)
@@ -229,6 +223,16 @@ public class VisualDARP {
             ++i;
         }
         return chart;
+    }
+
+    /**
+     * return the load profile associated to this vehicle, at each encountered node
+     * @param vehicle vehicle whose load profile needs to be known
+     * @return load profile of the vehicle. x-axis is indexed using the labels of the nodes
+     */
+    public Pane loadProfile(int vehicle) {
+        //TODO
+        return new Pane();
     }
 
     /**
@@ -265,60 +269,4 @@ public class VisualDARP {
         solution.addVisit(vehicle, node);
     }
 
-    /**
-     * move all objects within the scene when a drag event occurs
-     */
-    public void registerDragListener() {
-        pane.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
-            mouseAnchorX = event.getSceneX();
-            mouseAnchorY = event.getSceneY();
-            canvasTranslateX = shapesGroup.getTranslateX();
-            canvasTranslateY = shapesGroup.getTranslateY();
-        });
-        pane.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
-            if (event.isPrimaryButtonDown()) { // only drag using the primary button
-                shapesGroup.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / pane.getScaleX());
-                shapesGroup.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / pane.getScaleY());
-                event.consume();
-            }
-        });
-    }
-
-    /**
-     * zoom in-out based on the mouse current position
-     */
-    public void registerScrollListener() {
-        pane.setOnScroll((ScrollEvent event) -> {
-            if (event.getDeltaY() != 0) {
-                event.consume();
-                double factor = 1.5;
-                //double x = ((double) width) / 2; // centered zoom
-                //double y = ((double) height) / 2;
-                double x = event.getSceneX();
-                double y = event.getSceneY();
-                if (event.getDeltaY() < 0) {
-                    factor = 1.0 / factor;
-                }
-                double oldScale = pane.getScaleX();
-                double scale = oldScale * factor;
-                double f = (scale / oldScale) - 1;
-
-                // determine offset that we will have to move the group
-                Bounds bounds = pane.localToScene(pane.getBoundsInLocal());
-                double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
-                double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
-
-                // timeline that scales and moves the group
-                Timeline timeline = new Timeline();
-                timeline.getKeyFrames().clear();
-                timeline.getKeyFrames().addAll(
-                        new KeyFrame(Duration.millis(150), new KeyValue(pane.translateXProperty(), pane.getTranslateX() - f * dx)),
-                        new KeyFrame(Duration.millis(150), new KeyValue(pane.translateYProperty(), pane.getTranslateY() - f * dy)),
-                        new KeyFrame(Duration.millis(150), new KeyValue(pane.scaleXProperty(), scale)),
-                        new KeyFrame(Duration.millis(150), new KeyValue(pane.scaleYProperty(), scale))
-                );
-                timeline.play();
-            }
-        });
-    }
 }

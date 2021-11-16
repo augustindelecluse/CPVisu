@@ -1,20 +1,18 @@
 package org.cpvisu;
 
 import javafx.animation.*;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape;
-import javafx.stage.Window;
 import javafx.util.Duration;
 
 public class AnimationFactory {
@@ -238,20 +236,22 @@ public class AnimationFactory {
         scene.widthProperty().addListener(listener);
     }
 
+    public static void moveOnDrag(Parent parent, Node itemsToMove) { new MoveOnDragParent(parent, itemsToMove);}
+
     public static void moveOnDrag(Scene scene, Node itemsToMove) {
-        new MoveOnDrag(scene, itemsToMove);
+        new MoveOnDragScene(scene, itemsToMove);
     }
 
-    private static class MoveOnDrag {
+    private static class MoveOnDragScene {
 
-        private Scene scene;
-        private Node itemsToMove;
+        private final Scene scene;
+        private final Node itemsToMove;
         private double mouseAnchorX; // used for the position when dragging nodes
         private double mouseAnchorY;
         private double canvasTranslateX;
         private double canvasTranslateY;
 
-        public MoveOnDrag(Scene scene, Node itemsToMove) {
+        public MoveOnDragScene(Scene scene, Node itemsToMove) {
             this.scene = scene;
             this.itemsToMove = itemsToMove;
             registerDragListener();
@@ -275,6 +275,79 @@ public class AnimationFactory {
                 }
             });
         }
+    }
+
+    private static class MoveOnDragParent{
+
+        private final Parent parent;
+        private final Node itemsToMove;
+        private double mouseAnchorX; // used for the position when dragging nodes
+        private double mouseAnchorY;
+        private double canvasTranslateX;
+        private double canvasTranslateY;
+
+        public MoveOnDragParent (Parent parent, Node itemsToMove) {
+            this.parent = parent;
+            this.itemsToMove = itemsToMove;
+            registerDragListener();
+        }
+
+        /**
+         * move all objects within the scene when a drag event occurs
+         */
+        private void registerDragListener() {
+            parent.setOnMousePressed((MouseEvent event) -> { // register the initial position for the dragging
+                mouseAnchorX = event.getSceneX();
+                mouseAnchorY = event.getSceneY();
+                canvasTranslateX = itemsToMove.getTranslateX();
+                canvasTranslateY = itemsToMove.getTranslateY();
+            });
+            parent.setOnMouseDragged((MouseEvent event) -> { // move the objects in the scene
+                if (event.isPrimaryButtonDown()) { // only drag using the primary button
+                    itemsToMove.setTranslateX(canvasTranslateX + (event.getSceneX() - mouseAnchorX) / itemsToMove.getScaleX());
+                    itemsToMove.setTranslateY(canvasTranslateY + (event.getSceneY() - mouseAnchorY) / itemsToMove.getScaleY());
+                    event.consume();
+                }
+            });
+        }
+    }
+
+    /**
+     * zoom on all elements located in the parent whenever a scroll occurs
+     * @param parent container for all nodes that needs to be zoomed on
+     */
+    public static void zoomOnSCroll(Parent parent) {
+        parent.setOnScroll((ScrollEvent event) -> {
+            if (event.getDeltaY() != 0) {
+                event.consume();
+                double factor = 1.5;
+
+                double x = event.getSceneX();
+                double y = event.getSceneY();
+                if (event.getDeltaY() < 0) {
+                    factor = 1.0 / factor;
+                }
+                double oldScale = parent.getScaleX();
+                double scale = oldScale * factor;
+                double f = (scale / oldScale) - 1;
+
+                // determine offset that we will have to move the group
+                Bounds bounds = parent.localToScene(parent.getBoundsInLocal());
+                double dx = (x - (bounds.getWidth() / 2 + bounds.getMinX()));
+                double dy = (y - (bounds.getHeight() / 2 + bounds.getMinY()));
+
+                // timeline that scales and moves the group
+                Timeline timeline = new Timeline();
+                timeline.getKeyFrames().clear();
+                timeline.getKeyFrames().addAll(
+                        new KeyFrame(Duration.millis(150), new KeyValue(parent.translateXProperty(), parent.getTranslateX() - f * dx)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(parent.translateYProperty(), parent.getTranslateY() - f * dy)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(parent.scaleXProperty(), scale)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(parent.scaleYProperty(), scale))
+                );
+                timeline.play();
+            }
+        });
     }
 
 }

@@ -101,4 +101,23 @@ public class GroupArea extends Pane {
         setTranslateX(initX + x);
     }
 
+    /**
+     * gives the value of the current head of the element, considered as a VisualTextRectangle
+     * @return x value for the head. 0 if multiple heads exist
+     */
+    public double getHeadVisualTextRectangleX() {
+        VisualTextRectangle head = null;
+        for (Node child: getChildren()) {
+            if (child instanceof VisualTextRectangle) {
+                if (head != null)
+                    return .0;
+                head = (VisualTextRectangle) child;
+            }
+        }
+        if (head == null)
+            return .0;
+        else
+            return head.getX();
+    }
+
 }

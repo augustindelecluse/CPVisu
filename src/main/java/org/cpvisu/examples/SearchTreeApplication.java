@@ -30,11 +30,23 @@ public class SearchTreeApplication extends VisualApplication {
         searchTree.addBranch(4, 7);
         searchTree.addBranch(1, 8);
 
-        //autoGrowingTree();
+        /*
+        searchTree.addBranch(0, 1);
+        searchTree.addBranch(1, 2);
+        searchTree.addBranch(1, 3);
+        searchTree.addBranch(1, 4);
+        searchTree.addBranch(4, 5);
+        searchTree.addBranch(4, 6);
+        searchTree.addBranch(4, 7);
+        searchTree.addBranch(4, 8);
+         */
+
+        autoGrowingTree();
         visualSearchTree = new VisualSearchTree(searchTree);
         visual = visualSearchTree.update();
         Scene scene = new Scene(visual, 1200, 600);
-        //moveOnDrag(scene, visual);
+        moveOnDrag(scene, visual);
+        zoomOnSCroll(visual);
         return scene;
     }
 
