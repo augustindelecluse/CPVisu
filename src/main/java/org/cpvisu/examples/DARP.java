@@ -1,5 +1,6 @@
 package org.cpvisu.examples;
 
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
@@ -9,6 +10,7 @@ import javafx.stage.Stage;
 import org.cpvisu.VisualApplication;
 import org.cpvisu.VisualDARP;
 import org.cpvisu.chart.DARPGanttChart;
+import org.cpvisu.chart.LoadProfileChart;
 import org.cpvisu.problems.DARPInstance;
 
 import static org.cpvisu.AnimationFactory.autoResize;
@@ -19,9 +21,7 @@ public class DARP extends VisualApplication {
     public Scene application(Stage stage) {
         int width = 1000;
         int height = 500;
-        SplitPane splitPane = new SplitPane(); // container for the whole visualisation
 
-        // x, y visualisation
         DARPInstance instance = DARPInstance.readFromFile("data/darp/Cordeau/a3-24.txt");
 
         // possible solution for this instance:
@@ -39,11 +39,17 @@ public class DARP extends VisualApplication {
         int vehicle = 0;
         visualDARP.addRoute(vehicle, order);
 
-        Pane pane = visualDARP.nodeLayout(0);
+        Pane pane = visualDARP.nodeLayout(0); // x, y visualisation
+        DARPGanttChart chart = visualDARP.GanttLayout(vehicle); // gantt visualization
+        LoadProfileChart loadProfileChart = visualDARP.loadProfile(vehicle); // load profile visualisation
 
-        DARPGanttChart chart = visualDARP.GanttLayout(vehicle);
+        SplitPane chartPlane = new SplitPane(); // container for the charts
+        chartPlane.setOrientation(Orientation.VERTICAL);
+        chartPlane.setDividerPosition(0, 2/3. * height); // 2/3 of space is set for the gantt visualisation
+        chartPlane.getItems().addAll(chart, loadProfileChart);
 
-        splitPane.getItems().addAll(pane, chart);
+        SplitPane splitPane = new SplitPane(); // container for the whole visualisation
+        splitPane.getItems().addAll(pane, chartPlane);
         Scene scene = new Scene(splitPane, width + 500, height);
         stage.setTitle("Dial-A-Ride Problem");
         return scene;

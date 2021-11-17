@@ -1,15 +1,10 @@
 package org.cpvisu;
 
-import javafx.animation.*;
-import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.util.Duration;
 import org.cpvisu.chart.DARPGanttChart;
+import org.cpvisu.chart.LoadProfileChart;
 import org.cpvisu.problems.DARPInstance;
 import org.cpvisu.problems.DARPNode;
 import org.cpvisu.problems.DARPNodeSolution;
@@ -200,13 +195,10 @@ public class VisualDARP {
      * @return Gantt layout for a vehicle
      */
     public DARPGanttChart GanttLayout(int vehicle) {
-        String[] nodes = new String[solution.getNodes(vehicle).size()];
-        int i = 0;
-        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle))
-            nodes[i++] = nodeSolution.getDarpNode().shortDescription();
+        String[] nodes = nodeDescription(vehicle);
         DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
         chart.setBlockHeight(20);
-        i = 0;
+        int i = 0;
         double timeArrival;
         DARPNodeSolution pred = null;
         for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle)) {
@@ -230,9 +222,21 @@ public class VisualDARP {
      * @param vehicle vehicle whose load profile needs to be known
      * @return load profile of the vehicle. x-axis is indexed using the labels of the nodes
      */
-    public Pane loadProfile(int vehicle) {
-        //TODO
-        return new Pane();
+    public LoadProfileChart loadProfile(int vehicle) {
+        LoadProfileChart chart = new LoadProfileChart(darp.getVehicleCapacity(vehicle));
+        String[] nodes = solution.getNodes(vehicle).stream().map(n -> String.format("node %d", n.getDarpNode().getId())).toArray(String[]::new);
+        double[] cumulCapacity = solution.getNodes(vehicle).stream().mapToDouble(DARPNodeSolution::getCumulCapacity).toArray();
+        String description = String.format("Vehicle %d", vehicle);
+        chart.addCumulCapacity(description, nodes, cumulCapacity);
+        return chart;
+    }
+
+    private String[] nodeDescription(int vehicle) {
+        String[] nodes = new String[solution.getNodes(vehicle).size()];
+        int i = 0;
+        for (DARPNodeSolution nodeSolution: solution.getNodes(vehicle))
+            nodes[i++] = nodeSolution.getDarpNode().shortDescription();
+        return nodes;
     }
 
     /**

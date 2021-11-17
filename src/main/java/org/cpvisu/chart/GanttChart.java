@@ -15,7 +15,6 @@ import javafx.scene.chart.ValueAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.*;
-import org.cpvisu.examples.GanttChartSample;
 
 public class GanttChart<X,Y> extends XYChart<X,Y> {
 
@@ -216,7 +215,6 @@ public class GanttChart<X,Y> extends XYChart<X,Y> {
             getPlotChildren().remove(container);
         }
         removeSeriesFromDisplay(series);
-
     }
 
 

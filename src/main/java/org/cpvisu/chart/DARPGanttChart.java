@@ -29,6 +29,7 @@ public class DARPGanttChart extends GanttChart<Number, String>{
         super(numberAxis, stringAxis, data);
         setStylesheet("ganttchart.css");
         this.setBlockHeight( 50);
+        setLegendVisible(false);
     }
 
     /**
