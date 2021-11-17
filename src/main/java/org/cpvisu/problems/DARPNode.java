@@ -89,7 +89,7 @@ public class DARPNode extends TimeWindowNode {
                         Available in [%.3f %.3f]
                           """,
                 id, isPickup() ? "Pickup" : isDrop() ? "Drop" : "Depot", x, y,
-                isDepot() ? "" : String.format(": request %d, capacity at node = %d", requestId, capacity),
+                isDepot() ? "" : String.format("\nrequest %d\nCapacity at node = %d", requestId, capacity),
                 twStart, twEnd);
     }
 

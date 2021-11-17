@@ -157,4 +157,14 @@ public class DARPSolution {
         return routes[vehicle];
     }
 
+    /**
+     * gives all existing solution nodes
+     */
+    public ArrayList<DARPNodeSolution> getNodes() {
+        ArrayList<DARPNodeSolution> list = new ArrayList<>();
+        for (ArrayList route : routes)
+            list.addAll(route);
+        return list;
+    }
+
 }

@@ -1,8 +1,11 @@
 package org.cpvisu;
 
 import javafx.scene.Node;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Shape;
+import javafx.util.Duration;
 import org.cpvisu.chart.DARPGanttChart;
 import org.cpvisu.chart.LoadProfileChart;
 import org.cpvisu.problems.DARPInstance;
@@ -14,7 +17,9 @@ import org.cpvisu.util.colors.ColorFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.cpvisu.AnimationFactory.moveOnDrag;
 import static org.cpvisu.AnimationFactory.zoomOnSCroll;
@@ -138,6 +143,8 @@ public class VisualDARP {
             }
         }
         // space out the shapes so that they occupy the whole screen
+        Map<Integer, DARPNodeSolution> solutionMap = solution.getNodes().stream().collect(Collectors.toMap(n -> n.getDarpNode().getId(), n -> n));
+
         for (DARPNode node: nodeList) {
             VisualNode shape = drawingFunction.apply(node);
             double x = ((node.getX() - min) / (max - min)) * (minWindow - 2 * threshold) + threshold;
@@ -153,10 +160,16 @@ public class VisualDARP {
                 visualNode[i].setFill(color);
             }
             shapes[i] = shape.getNode();
-            // click listener to provide information related to the node
-            shapes[i].setOnMousePressed(e -> {
-                System.out.println(node);
-            });
+            // tooltip to provide information related to the node
+            Tooltip tp;
+            DARPNodeSolution solution = solutionMap.getOrDefault(node.getId(), null);
+            if (solution != null) {
+                tp = new Tooltip(solution.toString());
+            } else {
+                tp = new Tooltip(node.toString());
+            }
+            tp.setShowDuration(Duration.INDEFINITE); // display for as long as the mouse is over the node, as there might be a lot of info
+            Tooltip.install(shapes[i], tp);
         }
         // plot the transition between the nodes for the current vehicle
         Pane transitions = new Pane();
