@@ -13,5 +13,5 @@
 .dashed-line {
     -fx-stroke-width: 2;
     -fx-stroke:rgba(128,0,0,0.5);
-    -fx-stroke-dash-array: 8;
+    /* -fx-stroke-dash-array: 8; */
 }

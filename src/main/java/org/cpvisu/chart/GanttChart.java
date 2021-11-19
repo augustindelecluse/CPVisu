@@ -18,7 +18,7 @@ import javafx.scene.shape.*;
 
 public class GanttChart<X,Y> extends XYChart<X,Y> {
 
-    private static class GanttElement {
+    protected static class GanttElement {
 
         public double length;
         public String styleClass;
@@ -82,7 +82,7 @@ public class GanttChart<X,Y> extends XYChart<X,Y> {
         return ((GanttElement) obj).getStyleClass();
     }
 
-    private static double getLength( Object obj) {
+    protected static double getLength( Object obj) {
         return ((GanttElement) obj).getLength();
     }
 
@@ -102,12 +102,15 @@ public class GanttChart<X,Y> extends XYChart<X,Y> {
                     double x = getXAxis().getDisplayPosition(item.getXValue());
                     double y = getYAxis().getDisplayPosition(item.getYValue());
                     if (Double.isNaN(x) || Double.isNaN(y)) {
+                        if (item.getNode() != null)
+                            item.getNode().setVisible(false);
                         continue;
                     }
                     yValues.add(y);
                     Node block = item.getNode();
                     Shape ellipse;
                     if (block != null) {
+                        block.setVisible(true);
                         if (block instanceof StackPane) {
                             StackPane region = (StackPane) item.getNode();
                             boolean isBlock = item.getExtraValue() instanceof TimeBlock;
@@ -162,10 +165,13 @@ public class GanttChart<X,Y> extends XYChart<X,Y> {
                 double x = getXAxis().getDisplayPosition(item.getXValue());
                 double y = getYAxis().getDisplayPosition(item.getYValue());
                 if (Double.isNaN(x) || Double.isNaN(y)) {
+                    if (item.getNode() != null)
+                        item.getNode().setVisible(false);
                     continue;
                 }
                 Node block = item.getNode();
                 if (item.getExtraValue() instanceof Transition) {
+                    block.setVisible(true);
                     Line line = (Line) block;
                     // start from this series
                     ((Line) block).setStartY(getBlockHeight() / 2);

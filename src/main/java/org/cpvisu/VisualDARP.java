@@ -1,10 +1,12 @@
 package org.cpvisu;
 
+import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Shape;
 import javafx.util.Duration;
 import org.cpvisu.chart.DARPGanttChart;
 import org.cpvisu.chart.LoadProfileChart;
@@ -40,6 +42,8 @@ public class VisualDARP {
     private final int height;
     private final DARPNode[] nodeList;
 
+    private Parent layout;
+
     private final Color unselectedNode = Color.rgb(125, 125, 125, 0.8);
 
     /**
@@ -63,7 +67,24 @@ public class VisualDARP {
             nodeList[i++] = node;
         for (DARPNode node: darp.getEndDepot())
             nodeList[i++] = node;
+    }
 
+    /**
+     * gives the complete layout for the DARP: a (x,y) layout, a ganttchart layout and a load profile layout
+     * @return
+     */
+    public Parent completeLayout() {
+        int vehicle = 0;
+        Pane nodeLayout = nodeLayout(vehicle);
+        DARPGanttChart ganttChart = GanttLayout(vehicle);
+        LoadProfileChart loadChart = loadProfile(vehicle);
+        SplitPane chartPlane = new SplitPane(); // container for the charts
+        chartPlane.setOrientation(Orientation.VERTICAL);
+        chartPlane.setDividerPosition(0, 2/3. * height); // 2/3 of space is set for the gantt visualisation
+        chartPlane.getItems().addAll(ganttChart, loadChart);
+        SplitPane splitPane = new SplitPane(); // container for the whole visualisation
+        splitPane.getItems().addAll(nodeLayout, chartPlane);
+        return splitPane;
     }
 
     /**

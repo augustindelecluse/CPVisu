@@ -1,8 +1,11 @@
 package org.cpvisu.examples;
 
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -26,31 +29,27 @@ public class DARP extends VisualApplication {
 
         // possible solution for this instance:
         /*
-         * 48 -> 13 -> 37 -> 21 -> 45 -> 10 -> 23 -> 34 -> 47 -> 20 ->  7 -> 44 -> 31 ->  0 ->  6 -> 24 -> 30 -> 22 -> 11 -> 46 -> 35 ->  4 -> 28 ->  8 -> 32 ->  2 -> 26 -> 51
-         * 49 -> 15 -> 39 ->  1 -> 25 ->  9 -> 33 -> 14 -> 38 ->  5 -> 29 -> 52
-         * 50 -> 19 -> 43 -> 17 -> 41 -> 12 -> 18 -> 36 -> 42 -> 16 ->  3 -> 40 -> 27 -> 53
+         * 48, 13, 37, 21, 45, 10, 23, 34, 47, 20,  7, 44, 31,  0,  6, 24, 30, 22, 11, 46, 35,  4, 28,  8, 32,  2, 26, 51
+         * 49, 15, 39,  1, 25,  9, 33, 14, 38,  5, 29, 52
+         * 50, 19, 43, 17, 41, 12, 18, 36, 42, 16,  3, 40, 27, 53
          */
 
-        Integer [] order = new Integer[] {49, 15, 39, 1, 25, 9, 33, 14, 38, 5, 29, 52};
+        Integer [] order1 = new Integer[] {48, 13, 37, 21, 45, 10, 23, 34, 47, 20,  7, 44, 31,  0,  6, 24, 30, 22, 11, 46, 35,  4, 28,  8, 32,  2, 26, 51};
+        Integer [] order2 = new Integer[] {49, 15, 39,  1, 25,  9, 33, 14, 38,  5, 29, 52};
+        Integer [] order3 = new Integer[] {50, 19, 43, 17, 41, 12, 18, 36, 42, 16,  3, 40, 27, 53};
         // the numbering in this system is not the same as in the instance, mapping it
-        instance.mapNodes(order, 1, 0, 2);
+        instance.mapNodes(order1, 1, 0, 2);
+        instance.mapNodes(order2, 1, 0, 2);
+        instance.mapNodes(order3, 1, 0, 2);
 
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
-        int vehicle = 0;
-        visualDARP.addRoute(vehicle, order);
+        visualDARP.addRoute(0, order1);
+        visualDARP.addRoute(1, order2);
+        visualDARP.addRoute(2, order3);
 
-        Pane pane = visualDARP.nodeLayout(0); // x, y visualisation
-        DARPGanttChart chart = visualDARP.GanttLayout(vehicle); // gantt visualization
-        LoadProfileChart loadProfileChart = visualDARP.loadProfile(vehicle); // load profile visualisation
+        Parent root = visualDARP.completeLayout();
 
-        SplitPane chartPlane = new SplitPane(); // container for the charts
-        chartPlane.setOrientation(Orientation.VERTICAL);
-        chartPlane.setDividerPosition(0, 2/3. * height); // 2/3 of space is set for the gantt visualisation
-        chartPlane.getItems().addAll(chart, loadProfileChart);
-
-        SplitPane splitPane = new SplitPane(); // container for the whole visualisation
-        splitPane.getItems().addAll(pane, chartPlane);
-        Scene scene = new Scene(splitPane, width + 500, height);
+        Scene scene = new Scene(root, width + 500, height);
         stage.setTitle("Dial-A-Ride Problem");
         return scene;
     }
