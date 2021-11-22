@@ -1,11 +1,16 @@
 package org.cpvisu;
 
+import javafx.fxml.FXML;
 import javafx.geometry.Orientation;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.cpvisu.chart.DARPGanttChart;
@@ -22,6 +27,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.cpvisu.AnimationFactory.moveOnDrag;
 import static org.cpvisu.AnimationFactory.zoomOnSCroll;
@@ -32,17 +38,23 @@ import static org.cpvisu.AnimationFactory.zoomOnSCroll;
  */
 public class VisualDARP {
 
+    private ChoiceBox choiceBox;
     private DARPSolution solution;
     private DARPInstance darp;
     private Function<DARPNode, VisualNode> drawingFunction;
     private final double threshold = 20; // difference in coordinates between the scene and the effective drawing of the nodes
-    private Pane pane;
-    private Pane shapesGroup;
+    //private Pane pane;
+    //private Pane shapesGroup;
     private final int width;
     private final int height;
     private final DARPNode[] nodeList;
 
-    private Parent layout;
+    private DARPGanttChart ganttChart;
+    private LoadProfileChart loadChart;
+    private Pane nodeLayout;
+    private SplitPane chartPlane;
+    private SplitPane splitPane;
+    private VBox layout;
 
     private final Color unselectedNode = Color.rgb(125, 125, 125, 0.8);
 
@@ -74,17 +86,35 @@ public class VisualDARP {
      * @return
      */
     public Parent completeLayout() {
+        //ToolBar toolBar = new ToolBar();
+        choiceBox = new ChoiceBox();
+        for (int i = 0; i < darp.getNVehicle() ; ++i)
+            choiceBox.getItems().add(String.format("Vehicle %d", i));
+        choiceBox.getItems().add("All routes");
+        choiceBox.getItems().add("Only nodes");
+        choiceBox.setValue("Vehicle 0");
+        choiceBox.setOnAction(e -> {
+            int selectedIndex = choiceBox.getSelectionModel().getSelectedIndex();
+            if (selectedIndex == darp.getNVehicle()) {
+                selectVehicle(-1);
+            } else if (selectedIndex == darp.getNVehicle() + 1) {
+                selectVehicle(-2);
+            } else{
+                selectVehicle(selectedIndex);
+            }
+        });
         int vehicle = 0;
-        Pane nodeLayout = nodeLayout(vehicle);
-        DARPGanttChart ganttChart = GanttLayout(vehicle);
-        LoadProfileChart loadChart = loadProfile(vehicle);
-        SplitPane chartPlane = new SplitPane(); // container for the charts
+        nodeLayout = nodeLayout(vehicle);
+        ganttChart = GanttLayout(vehicle);
+        loadChart = loadProfile(vehicle);
+        chartPlane = new SplitPane(); // container for the charts
         chartPlane.setOrientation(Orientation.VERTICAL);
         chartPlane.setDividerPosition(0, 2/3. * height); // 2/3 of space is set for the gantt visualisation
         chartPlane.getItems().addAll(ganttChart, loadChart);
-        SplitPane splitPane = new SplitPane(); // container for the whole visualisation
+        splitPane = new SplitPane(); // container for the whole visualisation
         splitPane.getItems().addAll(nodeLayout, chartPlane);
-        return splitPane;
+        layout = new VBox(choiceBox, splitPane);
+        return layout;
     }
 
     /**
@@ -132,6 +162,20 @@ public class VisualDARP {
      * @return pane containing the nodes
      */
     public Pane nodeLayout(int vehicle) {
+        return nodeLayout(vehicle, true);
+    }
+
+    /**
+     * draw the nodes on the interface
+     * color the nodes in grey if they are not visited by the current vehicle, or in color otherwise
+     * @param vehicle vehicle considered
+     *                if >= 0, show the selected vehicle
+     *                if == -1, show all nodes and transitions
+     *                if == -2. show all nodes and no transitions
+     * @param interactions if true, add scroll and drag operations
+     * @return pane containing the nodes
+     */
+    public Pane nodeLayout(int vehicle, boolean interactions) {
         Node[] shapes = new Node[darp.getNNodes()];
         VisualNode[] visualNode = new VisualNode[shapes.length];
         //this.shapes = new VisualNode[shapes.length];
@@ -173,9 +217,9 @@ public class VisualDARP {
             shape.moveTo(x, y);
             int i = node.getId();
             visualNode[i] = shape;
-            if (selectedRoute != null && !selectedRoute.contains(i))
+            if (selectedRoute != null && !selectedRoute.contains(i)) // the node does not belong to a solution, color it as unselected
                 visualNode[i].setFill(unselectedNode);
-            else {
+            else { // color the node as selected
                 int requestId = node.getRequestId();
                 Color color = colorRoute.getOrDefault(requestId, requestId >= 0 ? ColorFactory.getPalette("default").colorAt(node.getRequestId()) : unselectedNode);
                 visualNode[i].setFill(color);
@@ -184,11 +228,10 @@ public class VisualDARP {
             // tooltip to provide information related to the node
             Tooltip tp;
             DARPNodeSolution solution = solutionMap.getOrDefault(node.getId(), null);
-            if (solution != null) {
+            if (solution != null)
                 tp = new Tooltip(solution.toString());
-            } else {
+            else
                 tp = new Tooltip(node.toString());
-            }
             tp.setShowDuration(Duration.INDEFINITE); // display for as long as the mouse is over the node, as there might be a lot of info
             Tooltip.install(shapes[i], tp);
         }
@@ -197,30 +240,45 @@ public class VisualDARP {
         transitions.getStylesheets().add(getClass().getResource("visual-darp.css").toExternalForm());
         int pred = 0;
         int j = 0;
-        if (vehicle >= 0) {
-            for (DARPNodeSolution nodeSolution : solution.getNodes(vehicle)) {
-                int succ = nodeSolution.getDarpNode().getId();
-                if (j != 0) {
-                    // plot the transition between pred and succ
-                    double xFrom = visualNode[pred].getCenterX() + shapes[pred].getTranslateX();
-                    double yFrom = visualNode[pred].getCenterY() + shapes[pred].getTranslateY();
-                    double xTo = visualNode[succ].getCenterX() + shapes[succ].getTranslateX();
-                    double yTo = visualNode[succ].getCenterY() + shapes[succ].getTranslateY();
-                    VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo, 0.5);
-                    transition.getMainLine().getStyleClass().add("node-layout-transition-line");
-                    transition.getTip().getStyleClass().add("node-layout-transition-tip");
-                    transitions.getChildren().add(transition);
+        if (vehicle >= -1) { // draw the transitions
+            int[] vehicleList;
+            if (vehicle == -1) // show all transitions
+                vehicleList = IntStream.range(0, darp.getNVehicle()).toArray();
+            else // show only the transition for the current vehicle
+                vehicleList = new int[] {vehicle};
+            for (int v: vehicleList) {
+                for (DARPNodeSolution nodeSolution : solution.getNodes(v)) {
+                    int succ = nodeSolution.getDarpNode().getId();
+                    if (j != 0) {
+                        // plot the transition between pred and successor
+                        double xFrom = visualNode[pred].getCenterX() + shapes[pred].getTranslateX();
+                        double yFrom = visualNode[pred].getCenterY() + shapes[pred].getTranslateY();
+                        double xTo = visualNode[succ].getCenterX() + shapes[succ].getTranslateX();
+                        double yTo = visualNode[succ].getCenterY() + shapes[succ].getTranslateY();
+                        VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo, 0.5);
+                        if (vehicleList.length > 1) { // more than 1 route will be drawn -> use different colors
+                            Color color = ColorFactory.getPalette("default").colorAt(v);
+                            transition.getMainLine().setStroke(color);
+                            transition.getTip().setFill(color);
+                        } else {
+                            transition.getMainLine().getStyleClass().add("node-layout-transition-line");
+                            transition.getTip().getStyleClass().add("node-layout-transition-tip");
+                        }
+                        transitions.getChildren().add(transition);
+                    }
+                    ++j;
+                    pred = succ;
                 }
-                ++j;
-                pred = succ;
             }
         }
-        shapesGroup = new Pane(transitions, new Pane(shapes));
-        pane = new Pane(shapesGroup);
+        Pane shapesGroup = new Pane(transitions, new Pane(shapes));
+        Pane pane = new Pane(shapesGroup);
         pane.setPrefHeight(height);
         pane.setPrefWidth(width);
-        zoomOnSCroll(pane);
-        moveOnDrag(pane, shapesGroup);
+        if (interactions) {
+            zoomOnSCroll(pane);
+            moveOnDrag(pane);
+        }
         return pane;
     }
 
@@ -229,6 +287,8 @@ public class VisualDARP {
      * @return Gantt layout for a vehicle
      */
     public DARPGanttChart GanttLayout(int vehicle) {
+        if (vehicle < 0 || vehicle >= darp.getNVehicle())
+            return DARPGanttChart.fromCategories();
         String[] nodes = nodeDescription(vehicle);
         DARPGanttChart chart = DARPGanttChart.fromCategories(nodes);
         chart.setBlockHeight(20);
@@ -257,6 +317,8 @@ public class VisualDARP {
      * @return load profile of the vehicle. x-axis is indexed using the labels of the nodes
      */
     public LoadProfileChart loadProfile(int vehicle) {
+        if (vehicle < 0 | vehicle >= darp.getNVehicle())
+            return new LoadProfileChart();
         LoadProfileChart chart = new LoadProfileChart(darp.getVehicleCapacity(vehicle));
         String[] nodes = solution.getNodes(vehicle).stream().map(n -> String.format("node %d", n.getDarpNode().getId())).toArray(String[]::new);
         double[] cumulCapacity = solution.getNodes(vehicle).stream().mapToDouble(DARPNodeSolution::getCumulCapacity).toArray();
@@ -305,6 +367,26 @@ public class VisualDARP {
      */
     public void visit(int vehicle, int node) {
         solution.addVisit(vehicle, node);
+    }
+
+
+    /**
+     * select a given vehicle and update the visualisation for this vehicle
+     * @param vehicle considered
+     *                if >= 0, show the selected vehicle
+     *                if == -1, show all nodes and transitions (but no chart)
+     *                if == -2. show all nodes and no transitions (but no chart)
+     */
+    public void selectVehicle(int vehicle) {
+        nodeLayout.getChildren().clear();
+        nodeLayout.getChildren().addAll(nodeLayout(vehicle, false).getChildren());
+
+        double[] dividersPosition = chartPlane.getDividerPositions();
+        chartPlane.getItems().removeAll(ganttChart, loadChart);
+        ganttChart = GanttLayout(vehicle);
+        loadChart = loadProfile(vehicle);
+        chartPlane.getItems().addAll(ganttChart, loadChart);
+        chartPlane.setDividerPosition(0, dividersPosition[0]);
     }
 
 }

@@ -236,6 +236,8 @@ public class AnimationFactory {
         scene.widthProperty().addListener(listener);
     }
 
+    public static void moveOnDrag(Parent parent) {new MoveOnDragParent(parent, parent);}
+
     public static void moveOnDrag(Parent parent, Node itemsToMove) { new MoveOnDragParent(parent, itemsToMove);}
 
     public static void moveOnDrag(Scene scene, Node itemsToMove) {

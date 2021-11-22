@@ -217,6 +217,9 @@ public class DARPGanttChart extends GanttChart<Number, String>{
                 if (lowerBound < upperBound) {
                     xAxis.setUpperBound(upperBound);
                     xAxis.setLowerBound(lowerBound);
+                    // show 10 ticks
+                    double tickUnit = (upperBound - lowerBound) / 10;
+                    xAxis.setTickUnit(tickUnit);
                 }
             }
             e.consume();
@@ -241,7 +244,6 @@ public class DARPGanttChart extends GanttChart<Number, String>{
             NumberAxis xAxis = (NumberAxis) getXAxis();
             double factor = (- event.getSceneX() + initXValue.get()) / (maxXValue / (xAxis.getUpperBound() - xAxis.getLowerBound()));
             // attempt to shift the x-axis
-
             if (xAxis.getUpperBound() + factor <= maxXValue && xAxis.getLowerBound() + factor >= 0) {
                 xAxis.setUpperBound(xAxis.getUpperBound() + factor);
                 xAxis.setLowerBound(xAxis.getLowerBound() + factor);
@@ -262,7 +264,6 @@ public class DARPGanttChart extends GanttChart<Number, String>{
         double threshold = 100;
         AtomicReference<Double> initY = new AtomicReference<>(0.);
         this.addEventHandler(MouseEvent.MOUSE_PRESSED, (MouseEvent event) -> {
-            //System.out.println("entered");
             initY.set(event.getSceneY());
         });
         this.addEventHandler(MouseEvent.MOUSE_DRAGGED, (MouseEvent event) -> { // move the objects in the scene
@@ -279,7 +280,6 @@ public class DARPGanttChart extends GanttChart<Number, String>{
                             return;
                         count -= 1;
                     }
-
                     count += Math.signum(factor);
                     initY.set(event.getSceneY());
                     getYAxis().setAutoRanging(false);
