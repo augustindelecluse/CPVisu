@@ -29,4 +29,6 @@ public interface VisualNode {
 
     public void setFill(Paint fill);
 
+    public void setStroke(Paint color);
+
 }

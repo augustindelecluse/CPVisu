@@ -8,6 +8,7 @@ public class DARPNode extends TimeWindowNode {
     protected int capacity;
     protected int requestId; // used to identify pairs of pickup and drop. negative means depot
     protected int id; // id of the node
+    protected boolean beginDepot = true; // indicates if the node is a beginning depot, only relevant if its capacity is set to 0
 
     // values assigned when the node is visited. Negative values are ignored
     /*
@@ -49,6 +50,7 @@ public class DARPNode extends TimeWindowNode {
      */
     public DARPNode deepCopy() {
         DARPNode copy = new DARPNode(x, y, servingDuration, capacity, twStart, twEnd, id, requestId);
+        copy.setBeginDepot(beginDepot);
         return copy;
     }
 
@@ -61,6 +63,14 @@ public class DARPNode extends TimeWindowNode {
     public boolean isDrop() {return capacity < 0;}
 
     public boolean isDepot() {return capacity == 0;}
+
+    public boolean isBeginDepot() {return isDepot() && beginDepot;}
+
+    public boolean isEndDepot() {return isDepot() && !beginDepot;}
+
+    public void setBeginDepot(boolean beginDepot) {
+        this.beginDepot = beginDepot;
+    }
 
     public int getId() {
         return id;

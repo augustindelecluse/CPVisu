@@ -86,7 +86,12 @@ public class LabeledPath extends Pane implements VisualNode {
 
     @Override
     public void setFill(Paint fill) {
+        polyline.setFill(fill);
+    }
 
+    @Override
+    public void setStroke(Paint color) {
+        polyline.setStroke(color);
     }
 
 }

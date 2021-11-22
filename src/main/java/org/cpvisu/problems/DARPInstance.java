@@ -1,29 +1,28 @@
 package org.cpvisu.problems;
 
 import org.cpvisu.util.io.InputReader;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Dial-A-Ride instance. Contains the information relative to the nodes and vehicle
  * Numbering used for the nodes:
- * - 0...nVehicle -> beginDepot
- * - nVehicle...(2*nRequests-nVehicle) -> node
- * - (2*nRequests-nVehicle)...end -> endDepot
+ * - 0...2*nRequest-1 -> request node
+ * - 2*nRequest...(2*nRequests+nVehicle-1) -> beginDepot
+ * - (2*nRequests+nVehicle)...end -> endDepot
  * this numbering is set as the id of each DARPNode
  */
 public class DARPInstance {
 
-    private DARPNode[] beginDepot;  // begin depot, 1 per vehicle
-    private DARPNode[] endDepot;    // end depot, 1 per vehicle
-    private DARPNode[] nodes;       // each node in the problem
+    private ArrayList<DARPNode> nodes;
     private int[] vehicleCapacity;  // capacity of each vehicle
     private int maxRideTime;        // max time in vehicle for a request
     private int horizonTime;        // latest return time of vehicle
     private double scaling = 1.0;
 
-    public DARPInstance(DARPNode[] beginDepot, DARPNode[] endDepot, DARPNode[] nodes, int[] vehicleCapacity, int maxRideTime, int horizonTime) {
-        this.beginDepot = beginDepot;
-        this.endDepot = endDepot;
+    public DARPInstance(ArrayList<DARPNode> nodes, int[] vehicleCapacity, int maxRideTime, int horizonTime) {
         this.nodes = nodes;
         this.vehicleCapacity = vehicleCapacity;
         this.maxRideTime = maxRideTime;
@@ -43,36 +42,40 @@ public class DARPInstance {
         int timeHorizon = reader.getInt();
         int vehicleCapacity = reader.getInt();
         int maxRideTime = reader.getInt();
-        DARPNode[] nodes = new DARPNode[nRequests * 2];
-        DARPNode[] beginDepot = new DARPNode[nVehicle];
-        DARPNode[] endDepot = new DARPNode[nVehicle];
+        ArrayList<DARPNode> nodes = new ArrayList<>();
         int[] vehicleCapacityArray = new int[nVehicle];
         Arrays.fill(vehicleCapacityArray, vehicleCapacity);
-        // read the instance: begin depot
+        // store the beginning depot
         int cnt = 0;
-        beginDepot[0] = readLine(reader, cnt++, -1);
-        for (int i=1; i < nVehicle; ++i) {
-            beginDepot[i] = beginDepot[0].deepCopy();
-            beginDepot[i].setId(cnt++);
-        }
+        DARPNode beginDepot = readLine(reader, cnt, -1);
         // read the instance: requests nodes
         for (int i = 0; i < nRequests; ++i)
-            nodes[i] = readLine(reader, cnt++, i);
-        for (int i = 0; i < nRequests; ++i) {
-            nodes[i + nRequests] = readLine(reader, cnt++, i);
+            nodes.add(readLine(reader, cnt++, i));
+        for (int i = 0; i < nRequests; ++i)
+            nodes.add(readLine(reader, cnt++, i));
+        // add the values for the beginning depot
+        beginDepot.setId(cnt++);
+        nodes.add(beginDepot);
+        for (int i=1; i < nVehicle; ++i) {
+            DARPNode depotCopy = beginDepot.deepCopy();
+            depotCopy.setId(cnt++);
+            nodes.add(depotCopy);
         }
         // read the instance: end depot
+        DARPNode endDepot;
         try {
-            endDepot[0] = readLine(reader, cnt++, -1);
+            endDepot = readLine(reader, cnt, -1);
         } catch (RuntimeException e) {
-            endDepot[0] = beginDepot[0].deepCopy(); // on some instances, the end depot is not specified and corresponds to the begin depot
-            endDepot[0].setId(cnt++);
+            endDepot = beginDepot.deepCopy(); // on some instances, the end depot is not specified and corresponds to the begin depot
         }
+        endDepot.setId(cnt++);
+        nodes.add(endDepot);
         for (int i=1; i < nVehicle; ++i) {
-            endDepot[i] = endDepot[0].deepCopy();
-            endDepot[i].setId(cnt++);
+            DARPNode depotCopy = endDepot.deepCopy();
+            depotCopy.setId(cnt++);
+            nodes.add(depotCopy);
         }
-        return new DARPInstance(beginDepot, endDepot, nodes, vehicleCapacityArray, maxRideTime, timeHorizon);
+        return new DARPInstance(nodes, vehicleCapacityArray, maxRideTime, timeHorizon);
     }
 
     private static DARPNode readLine(InputReader reader) {
@@ -94,19 +97,9 @@ public class DARPInstance {
      */
     public void setTimeScaling(double scaling) {
         for (DARPNode node: nodes) {
-            node.setServingDuration((int)(node.getServingDuration() * scaling));
-            node.setTwStart((int)(node.getTwStart() * scaling));
-            node.setTwEnd((int)(node.getTwEnd() * scaling));
-        }
-        for (DARPNode node: beginDepot) {
-            node.setServingDuration((int)(node.getServingDuration() * scaling));
-            node.setTwStart((int)(node.getTwStart() * scaling));
-            node.setTwEnd((int)(node.getTwEnd() * scaling));
-        }
-        for (DARPNode node: endDepot) {
-            node.setServingDuration((int)(node.getServingDuration() * scaling));
-            node.setTwStart((int)(node.getTwStart() * scaling));
-            node.setTwEnd((int)(node.getTwEnd() * scaling));
+            node.setServingDuration((int) (node.getServingDuration() * scaling));
+            node.setTwStart((int) (node.getTwStart() * scaling));
+            node.setTwEnd((int) (node.getTwEnd() * scaling));
         }
         this.scaling = scaling;
     }
@@ -121,15 +114,15 @@ public class DARPInstance {
     }
 
     public DARPNode[] getBeginDepot() {
-        return beginDepot;
+        return nodes.stream().filter(DARPNode::isBeginDepot).toArray(DARPNode[]::new);
     }
 
     public DARPNode[] getEndDepot() {
-        return endDepot;
+        return nodes.stream().filter(DARPNode::isEndDepot).toArray(DARPNode[]::new);
     }
 
     public DARPNode[] getNodes() {
-        return nodes;
+        return nodes.stream().filter(n -> !n.isDepot()).toArray(DARPNode[]::new);
     }
 
     public int[] getVehicleCapacity() {
@@ -157,11 +150,11 @@ public class DARPInstance {
     }
 
     public int getNNodes() {
-        return getNVehicle() * 2 + nodes.length;
+        return nodes.size();
     }
 
     public int getNRequests() {
-        return nodes.length / 2;
+        return (nodes.size() - getNVehicle() * 2) / 2;
     }
 
     /**
@@ -178,54 +171,36 @@ public class DARPInstance {
     }
 
     protected DARPNode getNode(int node) {
-        int nVehicle = getNVehicle();
-        return node < nVehicle ? beginDepot[node] : node < nodes.length + nVehicle ? nodes[node - nVehicle] : endDepot[node - nodes.length];
+        return nodes.stream().filter(n -> n.getId() == node).findFirst().orElse(null);
     }
 
     /**
-     * map the given numbering system into the inner numbering system
-     *
-     * example:
-     *      with 2 vehicles and 4 nodes, the inner representation is
-     *      - node[0, 1] -> begin nodes (comes first)
-     *      - node[2..5] -> requests nodes (comes second)
-     *      - node[6, 7] -> ending nodes (comes third)
-     *
-     *      mapNodes({0, 6, 3}, 0, 2, 1)
-     *
-     *      maps the nodes, indicating that in the given representation
-     *      - node[0, 1] -> begin nodes (comes first)
-     *      - node[2, 3] -> ending nodes (comes second)
-     *      - node[4..7] -> requests nodes (comes third)
-     *
-     *      the array is therefore changed to {0, 4, 7}
-     *
-     * @param order order that needs to be mapped to the inner representation
-     * @param rangeBeginDepot number in 0..2: indicates where the beginning depot are located
-     * @param rangeRequestNode number in 0..2: indicates where the nodes are located
-     * @param rangeEndDepot number in 0..2: indicates where the ending depot are located
+     * map the nodes from the instance with the given mapping
+     * providing mapping {i -> j}, the node with id == i will be assigned id j
+     * @param mapping mapping of ids for the nodes
      */
-    public void mapNodes(Integer[] order, int rangeBeginDepot, int rangeRequestNode, int rangeEndDepot) {
-        int nVehicle = getNVehicle();
-        int nNodes = getNNodes();
-        int nRequests = getNRequests();
-        int nRequestsNodes = nRequests * 2;
-        int mapping = rangeBeginDepot*100+rangeRequestNode*10+rangeEndDepot;
-        switch (mapping) {
-            case 12: // default mapping, nothing to change
-                return;
-            case 102: // nodes, begin, end -> begin, nodes, end
-                for (int i = 0; i < order.length ; ++i) {
-                    if (order[i] < nRequestsNodes) // request node, needs to be mapped
-                        order[i] = order[i] + nVehicle; // the beginning nodes come before
-                    else if (order[i] < nRequestsNodes + nVehicle) // begin node, needs to be mapped
-                        order[i] = order[i] - nRequestsNodes; // the beginning nodes come before
-                }
-                return;
-            // TODO implement other mappings
-            default:
-                throw new IllegalArgumentException("invalid mapping specified");
+    public void mapNodes(HashMap<Integer, Integer> mapping) {
+        for (DARPNode node: nodes)
+            node.setId(mapping.get(node.getId()));
+    }
+
+    /**
+     * map the nodes from the instance with the given mapping
+     * providing mapping {i -> [a, b, c]}, the node with id == i will be multiplied and assigned id a, b, c
+     * if the arraylist contained in the mapping contains only 1 element, the node will simply change its id
+     * unspecified mapping of nodes are ignored
+     * @param mapping mapping of ids for the nodes
+     */
+    public void mapNodesWithDuplicate(HashMap<Integer, ArrayList<Integer>> mapping) {
+        ArrayList<DARPNode> allNodes = new ArrayList<>();
+        for (DARPNode node: this.nodes) {
+            for (int newId: mapping.get(node.getId())) {
+                DARPNode newNode = node.deepCopy();
+                newNode.setId(newId);
+                allNodes.add(newNode);
+            }
         }
+        this.nodes = allNodes;
     }
 
 }

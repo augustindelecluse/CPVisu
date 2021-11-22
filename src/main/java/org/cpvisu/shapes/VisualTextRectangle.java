@@ -127,4 +127,9 @@ public class VisualTextRectangle extends Group implements VisualNode {
     public void setFill(Paint fill) {
         rectangle.setFill(fill);
     }
+
+    @Override
+    public void setStroke(Paint color) {
+        rectangle.setStroke(color);
+    }
 }

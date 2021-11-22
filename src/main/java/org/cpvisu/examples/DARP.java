@@ -37,10 +37,6 @@ public class DARP extends VisualApplication {
         Integer [] order1 = new Integer[] {48, 13, 37, 21, 45, 10, 23, 34, 47, 20,  7, 44, 31,  0,  6, 24, 30, 22, 11, 46, 35,  4, 28,  8, 32,  2, 26, 51};
         Integer [] order2 = new Integer[] {49, 15, 39,  1, 25,  9, 33, 14, 38,  5, 29, 52};
         Integer [] order3 = new Integer[] {50, 19, 43, 17, 41, 12, 18, 36, 42, 16,  3, 40, 27, 53};
-        // the numbering in this system is not the same as in the instance, mapping it
-        instance.mapNodes(order1, 1, 0, 2);
-        instance.mapNodes(order2, 1, 0, 2);
-        instance.mapNodes(order3, 1, 0, 2);
 
         VisualDARP visualDARP = new VisualDARP(instance, width, height);
         visualDARP.addRoute(0, order1);

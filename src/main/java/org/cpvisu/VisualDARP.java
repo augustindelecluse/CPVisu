@@ -139,11 +139,16 @@ public class VisualDARP {
         } else if (node.isPickup()) {
             return new VisualCircle(node.getX(), node.getY(), radius);
         } else if (node.isDrop()) {
+            /*
             double x = node.getX() - radius; // center the point
             double y = node.getY() - radius;
             VisualRectangle visualRectangle = new VisualRectangle(x, y, radius * 2, radius * 2);
             visualRectangle.setRotate(45);
             return visualRectangle;
+             */
+            VisualCircle circle = new VisualCircle(node.getX(), node.getY(), radius);
+            circle.setStrokeWidth(2.);
+            return circle;
         }
         return null;
     }
@@ -195,16 +200,28 @@ public class VisualDARP {
         double max = Math.max(maxX, maxY);
         double minWindow = Math.min(width, height);
         // register the nodes that are visited by the current vehicle
+        int[] vehicleList;
+        if (vehicle == -1) // show all transitions
+            vehicleList = IntStream.range(0, darp.getNVehicle()).toArray();
+        else // show only the transition for the current vehicle
+            vehicleList = new int[] {vehicle};
+
         HashSet<Integer> selectedRoute = null;
-        HashMap<Integer, Color> colorRoute = new HashMap<>();
-        if (vehicle >= 0) { // a specific path for a vehicle needs to be drawn
+        HashMap<Integer, Color> colorRoute = new HashMap<>(); // color for each request
+        if (vehicle >= -1) { // a specific path for a vehicle needs to be drawn
             selectedRoute = new HashSet<>();
             int i = 0; // used to increment color count
-            for (DARPNodeSolution nodeSolution : solution.getNodes(vehicle)) {
-                int requestId = nodeSolution.getDarpNode().getRequestId();
-                if (!colorRoute.containsKey(requestId) && requestId >= 0)
-                    colorRoute.put(requestId, ColorFactory.getPalette("default").colorAt(i++));
-                selectedRoute.add(nodeSolution.getDarpNode().getId());
+            for (int v : vehicleList) {
+                for (DARPNodeSolution nodeSolution : solution.getNodes(v)) {
+                    int requestId = nodeSolution.getDarpNode().getRequestId();
+                    if (!colorRoute.containsKey(requestId) && !nodeSolution.getDarpNode().isDepot()) {
+                        if (vehicleList.length > 1) // multiple vehicles must be drawn, color each node according to its vehicle
+                            colorRoute.put(requestId, ColorFactory.getPalette("default").colorAt(v));
+                        else // only one vehicle must be drawn, color each node according to its request id
+                            colorRoute.put(requestId, ColorFactory.getPalette("default").colorAt(i++));
+                    }
+                    selectedRoute.add(nodeSolution.getDarpNode().getId());
+                }
             }
         }
         // space out the shapes so that they occupy the whole screen
@@ -221,8 +238,14 @@ public class VisualDARP {
                 visualNode[i].setFill(unselectedNode);
             else { // color the node as selected
                 int requestId = node.getRequestId();
-                Color color = colorRoute.getOrDefault(requestId, requestId >= 0 ? ColorFactory.getPalette("default").colorAt(node.getRequestId()) : unselectedNode);
-                visualNode[i].setFill(color);
+                // get the color specified before. If none is found, color as unselected if this is a depot or use a default color otherwise
+                Color color = colorRoute.getOrDefault(requestId, node.isDepot() ? unselectedNode : ColorFactory.getPalette("default").colorAt(node.getRequestId()));
+                if (node.isDrop()) {
+                    visualNode[i].setStroke(color);
+                    visualNode[i].setFill(Color.TRANSPARENT);
+                } else {
+                    visualNode[i].setFill(color);
+                }
             }
             shapes[i] = shape.getNode();
             // tooltip to provide information related to the node
@@ -241,11 +264,6 @@ public class VisualDARP {
         int pred = 0;
         int j = 0;
         if (vehicle >= -1) { // draw the transitions
-            int[] vehicleList;
-            if (vehicle == -1) // show all transitions
-                vehicleList = IntStream.range(0, darp.getNVehicle()).toArray();
-            else // show only the transition for the current vehicle
-                vehicleList = new int[] {vehicle};
             for (int v: vehicleList) {
                 for (DARPNodeSolution nodeSolution : solution.getNodes(v)) {
                     int succ = nodeSolution.getDarpNode().getId();
@@ -258,6 +276,7 @@ public class VisualDARP {
                         VisualArrow transition = new VisualArrow(xFrom, yFrom, xTo, yTo, 0.5);
                         if (vehicleList.length > 1) { // more than 1 route will be drawn -> use different colors
                             Color color = ColorFactory.getPalette("default").colorAt(v);
+                            transition.getMainLine().getStrokeDashArray().add(8.);
                             transition.getMainLine().setStroke(color);
                             transition.getTip().setFill(color);
                         } else {
